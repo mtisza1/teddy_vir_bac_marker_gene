@@ -442,6 +442,89 @@ write.csv(stat.test_kingdom, file=sprintf("%s/intermediate_files/wilcoxon_bac_vs
 ```
 
 
+load extra metadata
+```{r}
+extra_meta_dt <- fread(
+  "/Users/u241374/mike_tisza/teddy_virome/data_files2/MP142_FLAT_V2.csv", 
+  sep = ",", header = T) %>%
+  select(c(mask_id, gestational_age, bmi, weightgain, sex, hla_category, jaundice, fullsibling, halfsibling))
 
+full_meta <- merge(extra_meta_dt, meta_dt, by= "mask_id")
+
+full_meta %>%
+  group_by(T1D, sex) %>%
+  summarise(n = n()) %>%
+  mutate(freq = n / sum(n))
+
+chisq.test(full_meta$T1D, full_meta$deliv_method)
+
+```
+
+
+test a few other things
+```{r}
+
+
+merge(vir_next_bray_dt, extra_meta_dt, by = "mask_id") %>%
+  group_by(mask_id1) %>%
+  summarize(average_bray = mean(bray_curtis),
+            sex = sex,
+            T1D = T1D) %>%
+  replace(is.na(.), 0) %>%
+  ungroup() %>%
+  distinct() %>%
+  ggplot(aes(T1D, average_bray)) +
+  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
+  geom_point(aes(fill = T1D), position = position_jitterdodge(jitter.width = 0.15), 
+             color = "grey20", alpha = 0.3)  +
+  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
+  theme_bw() +
+  facet_wrap(~sex, ncol = 1) +
+  stat_compare_means(label = "p.signif",
+                     method = "wilcox",
+                     comparisons = 
+                       list(c("Yes", "No"))) +
+  coord_flip() +
+  #theme(legend.position = "Off") #+
+  labs(x = "Type-1 Diabetes", 
+       y = "Avg Bray-Curtis Distance\nto Follow-up Sample",
+       title="virus SGBs")
+
+ggsave(file = sprintf("%s/charts/virome_T1D_and_sex_bray_curtis.pdf", find_rstudio_root_file()), 
+                 width = 4.5, height = 3)
+```
+
+test a few other things
+```{r}
+
+
+merge(bac_next_bray_dt, extra_meta_dt, by = "mask_id") %>%
+  group_by(mask_id1) %>%
+  summarize(average_bray = mean(bray_curtis),
+            sex = sex,
+            T1D = T1D) %>%
+  replace(is.na(.), 0) %>%
+  ungroup() %>%
+  distinct() %>%
+  ggplot(aes(T1D, average_bray)) +
+  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
+  geom_point(aes(fill = T1D), position = position_jitterdodge(jitter.width = 0.15), 
+             color = "grey20", alpha = 0.3)  +
+  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
+  theme_bw() +
+  facet_wrap(~sex, ncol = 1) +
+  stat_compare_means(label = "p.signif",
+                     method = "wilcox",
+                     comparisons = 
+                       list(c("Yes", "No"))) +
+  coord_flip() +
+  #theme(legend.position = "Off") #+
+  labs(x = "Type-1 Diabetes", 
+       y = "Avg Bray-Curtis Distance\nto Follow-up Sample",
+       title="bacteria SGBs")
+
+ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_sex_bray_curtis.pdf", find_rstudio_root_file()), 
+                 width = 4.5, height = 3)
+```
 
 

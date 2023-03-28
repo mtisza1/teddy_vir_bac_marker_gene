@@ -67,7 +67,7 @@ meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
   mutate(sample = as.character(sample))
 ```
 
-run bacteria PCA
+run bacteria tSNE
 ```{r}
 bac_prcomp1 <- prcomp(wide_bac_sp_dt)
 names(bac_prcomp1)
@@ -113,7 +113,7 @@ bac_T1Dp
 ```
 
 
-run virus PCA
+run virus tSNE
 ```{r}
 vir_prcomp1 <- prcomp(wide_vir_sp_dt)
 
@@ -166,6 +166,8 @@ tSNE_combp <- plot_grid(bac_dayp, bac_T1Dp, vir_dayp, vir_T1Dp, align = "h", nro
 ggsave(tSNE_combp, file = sprintf("%s/charts/tSNE_bacteria_vs_virus_all_samples.pdf", find_rstudio_root_file()), width = 8, height = 8)
 
 ```
+
+
 
 
 
