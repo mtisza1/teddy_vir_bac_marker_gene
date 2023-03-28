@@ -1,0 +1,199 @@
+---
+title: "plot average shannon diversity and average richness for virus bacteria SGBs"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(dplyr)
+library(cowplot)
+library(ggpubr)
+library(rstatix)
+library(vegan)
+library(rprojroot)
+
+```
+set paths and filenames
+```{r}
+### files
+bac_sp_table=sprintf("%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.bacteria_species.wide.tsv", find_rstudio_root_file())
+vir_sp_table=sprintf("%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.virus_species.wide.tsv", find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+
+```
+
+run alpha diversity metrics on virus and bacteria SGBs
+```{r}
+bac_sp_df <- read.delim(sprintf("%s", bac_sp_table), sep="\t", header = TRUE, row.names = 1) %>%
+  t()
+
+sampleIDs_bac_sp <- rownames(bac_sp_df)
+shannon_d_bac <- vegan::diversity(bac_sp_df, index = "shannon")
+richness_d_bac <- vegan::specnumber(bac_sp_df)
+
+bac_sample_diversity <- cbind(sampleIDs_bac_sp, shannon_d_bac, richness_d_bac)
+bac_sample_diversity <- as.data.table(bac_sample_diversity)
+bac_sample_diversity <- setDT(bac_sample_diversity)
+bac_sample_diversity$type <- "Bacteria"
+colnames(bac_sample_diversity) <- c("SampleID", "Shannon_diversity", "species_richness", "type")
+
+vir_sp_df <- read.delim(sprintf("%s", vir_sp_table), sep="\t", header = TRUE, row.names = 1) %>%
+  t()
+
+sampleIDs_vir_sp <- rownames(vir_sp_df)
+shannon_d_vir <- vegan::diversity(vir_sp_df, index = "shannon")
+richness_d_vir <- vegan::specnumber(vir_sp_df)
+
+vir_sample_diversity <- cbind(sampleIDs_vir_sp, shannon_d_vir, richness_d_vir)
+vir_sample_diversity <- as.data.table(vir_sample_diversity)
+vir_sample_diversity <- setDT(vir_sample_diversity)
+vir_sample_diversity$type <- "Virus"
+colnames(vir_sample_diversity) <- c("SampleID", "Shannon_diversity", "species_richness", "type")
+
+comb_sample_diversity <- rbind(bac_sample_diversity, vir_sample_diversity) %>%
+  mutate(SampleID = gsub("X", "", SampleID))
+
+comb_sample_diversity$Shannon_diversity <- as.numeric(comb_sample_diversity$Shannon_diversity)
+comb_sample_diversity$species_richness <- as.numeric(comb_sample_diversity$species_richness)
+
+
+```
+
+average diversity metrics accross all subject samples
+```{r}
+## load metadata table
+meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+  select(-V1)
+meta_dt$sample <- as.character(meta_dt$sample)
+
+subject_diversity_dt <- merge(comb_sample_diversity, meta_dt, by.x = "SampleID", by.y ="sample")
+
+subject_diversity_dt <- subject_diversity_dt %>%
+  group_by(mask_id, type) %>%
+  summarize(Shannon_diversity = mean(Shannon_diversity),
+            species_richness = mean(species_richness)) %>%
+  ungroup()
+
+```
+
+
+calculate stats & plot diversity, all subject
+```{r}
+
+stat.test_shan <- subject_diversity_dt %>% 
+  wilcox_test(Shannon_diversity ~ type, paired = TRUE) %>%
+  add_significance(p.col="p", output.col="p.signif")
+
+shanp <- ggplot(subject_diversity_dt, aes(factor(type), as.numeric(Shannon_diversity))) + 
+  geom_boxplot(aes(fill = factor(type)),  alpha = 0.6, outlier.shape = NA) +
+  geom_jitter(color="grey20", width = 0.15, alpha = 0.3, stroke = 0) +
+  theme_bw() + 
+  xlab("") + 
+  ylab("Avg. Shannon Diversity") + 
+  scale_fill_manual(values=c("#F2AD00", "#5BBCD6")) +
+  stat_pvalue_manual(stat.test_shan, label = "p.signif", y.position=4.3, tip.length = 0.01) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  guides(fill=guide_legend(title="SGB type"))
+
+stat.test_rich <- subject_diversity_dt %>% 
+  wilcox_test(species_richness ~ type, paired = TRUE) %>%
+  add_significance(p.col="p", output.col="p.signif")
+
+richp <- ggplot(subject_diversity_dt, aes(factor(type), as.numeric(species_richness))) + 
+  geom_boxplot(aes(fill = factor(type)),  alpha = 0.6, outlier.shape = NA) +
+  geom_jitter(color="grey20", width = 0.15, alpha = 0.3, stroke = 0) +
+  theme_bw() + 
+  xlab("") + 
+  ylab("Avg. SGB Richness") + 
+  scale_fill_manual(values=c("#F2AD00", "#5BBCD6")) +
+  stat_pvalue_manual(stat.test_rich, label = "p.signif", y.position=150, tip.length = 0.01) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+combp <- plot_grid(richp, shanp, align = "h", nrow = 1, rel_widths = c(38/100, 62/100))
+
+ggsave(combp, file = sprintf("%s/charts/alpha_diversity_by_subject1.pdf", find_rstudio_root_file()), width = 4, height = 4)
+```
+
+format for day of life (rounded to next 100) and country
+```{r}
+## this functions rounds a number up to the nearest 100
+round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
+
+diversity_meta_dt <- merge(comb_sample_diversity, meta_dt, by.x = "SampleID", by.y ="sample") %>%
+  mutate(rounded_DOL =  round_any(age_days, 100),
+         Country = case_when(
+           country == 1 ~ "USA",
+           country == 2 ~ "FIN",
+           country == 3 ~ "GER",
+           country == 4 ~ "SWE",
+           TRUE ~ "other"
+         ))
+
+```
+
+plot alpha diversity by day of life, bacteria vs virus
+```{r}
+diversity_meta_dt %>%
+  filter( rounded_DOL <= 1400) %>%
+  ggplot(aes(x = factor(rounded_DOL), y = species_richness, fill = type)) +
+  geom_boxplot(outlier.shape=NA, notch=T, alpha = 0.9) +
+  scale_fill_manual(values=c("#F2AD00", "#5BBCD6"), name = "SGB type") +
+  theme_bw() +
+  coord_cartesian(ylim = c(0, 165)) +
+  labs(x="day of life (rounded)", y="Species Richness")  +
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(sprintf("%s/charts/species_richness_by_day_of_life.pdf", find_rstudio_root_file()), width = 4, height = 4)
+
+diversity_meta_dt %>%
+  filter( rounded_DOL <= 1400) %>%
+  ggplot(aes(x = factor(rounded_DOL), y = Shannon_diversity, fill = type)) +
+  geom_boxplot(outlier.shape=NA, notch=T, alpha = 0.9) +
+  scale_fill_manual(values=c("#F2AD00", "#5BBCD6"), name = "SGB type") +
+  theme_bw() +
+  #coord_cartesian(ylim = c(0, 165)) +
+  labs(x="day of life (rounded)", y="Shannon Diversity")  +
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(sprintf("%s/charts/shannon_diversity_by_day_of_life.pdf", find_rstudio_root_file()), width = 4, height = 4)
+
+```
+
+plot alpha diversity by day of life, by country
+```{r}
+diversity_meta_dt %>%
+  filter( rounded_DOL <= 1400) %>%
+  ggplot(aes(x = factor(rounded_DOL), y = species_richness, fill = Country)) +
+  geom_boxplot(outlier.shape=NA, notch=T, alpha = 0.9) +
+  scale_fill_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3"), name = "SGB type") +
+  facet_wrap(vars(type), ncol = 1) +
+  theme_bw() +
+  coord_cartesian(ylim = c(0, 165)) +
+  labs(x="day of life (rounded)", y="SGB Richness")  +
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(sprintf("%s/charts/species_richness_by_day_of_life_country.pdf", find_rstudio_root_file()), width = 4, height = 8)
+
+diversity_meta_dt %>%
+  filter( rounded_DOL <= 1400) %>%
+  ggplot(aes(x = factor(rounded_DOL), y = Shannon_diversity, fill = Country)) +
+  geom_boxplot(outlier.shape=NA, notch=T, alpha = 0.9) +
+  scale_fill_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3"), name = "SGB type") +
+  facet_wrap(vars(type), ncol = 1) +
+  theme_bw() +
+  labs(x="day of life (rounded)", y="Shannon Diversity")  +
+  theme(legend.position = "bottom", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(sprintf("%s/charts/shannon_diversity_by_day_of_life_country.pdf", find_rstudio_root_file()), width = 4, height = 8)
+
+```
+
+
+
+
+
+
+
+

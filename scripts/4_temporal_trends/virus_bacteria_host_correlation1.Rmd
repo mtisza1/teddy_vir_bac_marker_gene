@@ -1,0 +1,122 @@
+---
+title: "correlation between virus SGBs and bacteria SGBs in putative host genus"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(rprojroot)
+library(cowplot)
+library(nationalparkcolors)
+
+```
+
+set paths and filenames
+```{r}
+### files
+temporal_table=sprintf("%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv", find_rstudio_root_file())
+iphop_table=sprintf("%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv", find_rstudio_root_file())
+taxonomy_table=sprintf("%s/data/TGVG_database_v1.1.VC_taxonomy_table.csv", find_rstudio_root_file())
+```
+
+load tables and get host prediction for each virus SGB
+```{r}
+temporal_dt <- fread(sprintf("%s", temporal_table), header = T, sep = "\t")
+
+tax_dt <- fread(sprintf("%s", taxonomy_table), sep = ",", header = T) %>%
+  select(c(name, Species))
+
+iphop_dt <- fread(sprintf("%s", iphop_table), sep = ",", header = T, col.names = c("name", "AAI", "host_lineage", "confidence", "methods")) %>%
+  mutate(host_genus = gsub(".*g__","g__", host_lineage),
+         host_family = gsub(";g__.*","", host_lineage))
+
+merge_dt <- merge(temporal_dt, tax_dt, by.x = "species", by.y = "Species", all.x = T)
+
+merge_dt <- merge(merge_dt, iphop_dt, by = "name", all.x = T)
+
+merge_dt <- merge_dt %>%
+  mutate(host_genus = case_when(
+    kingdom == "Bacteria" ~ as.character(genus),
+    kingdom == "Virus" ~ as.character(host_genus),
+    TRUE ~ "Not Found"
+  ))
+```
+
+correlations for bacteria virus pairs
+```{r}
+merge_dt$king_host_species <- str_c(merge_dt$kingdom, "@", merge_dt$host_genus, "@",merge_dt$species)
+wide_host_dt <- merge_dt %>%
+  filter(host_genus != "NA") %>%
+  subset( select = c("king_host_species", "rounded_DOL", "self_rel_abund")) %>%
+  distinct() %>%
+  pivot_wider(names_from = king_host_species, 
+              values_from = self_rel_abund, 
+              values_fill = 0) %>%
+  select(-rounded_DOL)
+
+#colnames(wide_host_dt)
+data_cor <- cor(wide_host_dt[ , !grepl("Virus", colnames(wide_host_dt))],  # Calculate correlations
+                wide_host_dt[ , grepl("Virus", colnames(wide_host_dt))])
+data_cor <- as.data.frame(data_cor)
+
+data_cor <- setDT(data_cor, keep.rownames = "Bacteria")
+
+cor_long <- data_cor %>%
+  pivot_longer(!Bacteria, names_to = "Virus", values_to = "correlation")
+
+cor_long <- setDT(cor_long)
+
+cor_long <- cor_long[, c("Bacteria_kingdom", "Bacteria_genus", "Bacteria_species") := tstrsplit(Bacteria, "@", fixed=TRUE)]
+
+cor_long <- cor_long[, c("Virus_kingdom", "Virus_host_genus", "Virus_species") := tstrsplit(Virus, "@", fixed=TRUE)] %>%
+  select(c(correlation, Virus_species, Virus_host_genus, Bacteria_species, Bacteria_genus))
+
+host_match_corr_dt <- cor_long %>%
+  filter(Virus_host_genus == Bacteria_genus)
+
+dim(
+  host_match_corr_dt %>% distinct(Virus_host_genus)
+)
+```
+
+plot distribution of best correlations by genus
+```{r}
+pal <- park_palette("Everglades")
+coul <- colorRampPalette(pal)(66)
+
+host_match_corr_dt %>%
+  group_by(Virus_species) %>%
+  filter(correlation == max(correlation)) %>%
+  ungroup() %>%
+  ggplot(aes(x = Virus_host_genus, y = correlation, color = Virus_host_genus)) +
+  geom_boxplot(fill = "white", color = "grey50", outlier.shape = NA) +
+  geom_hline(yintercept =0) +
+  geom_jitter(width = 0.4, alpha = 0.7, stroke = 0) +
+  scale_color_manual(values = coul) +
+  theme_bw() + 
+  labs(x = "Putative Host Genus", y = "Virus SGB to Host, Best Correlation") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "Off") +
+  scale_x_discrete(labels = function(x) sub('g__', '', x))
+ggsave(file = sprintf("%s/charts/correlation_virus_SGB_best_bacteria1.pdf", find_rstudio_root_file()), width = 8, height = 4)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

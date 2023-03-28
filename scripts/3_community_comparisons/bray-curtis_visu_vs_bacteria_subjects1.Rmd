@@ -1,0 +1,164 @@
+---
+title: "bray-curtis distance of whole subjects, bacteria vs virus"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(vegan)
+library(ggpubr)
+library(rstatix)
+library(cowplot)
+
+```
+
+set paths and filenames
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+
+```
+
+load long table and metadata, merge 
+```{r}
+long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+  select(sampleID, rel_abundance, lineage) %>%
+  mutate(sampleID = as.character(sampleID),
+         kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
+                             grepl("k__Vir", lineage) ~ "Virus",
+                             grepl("k__Ar", lineage) ~ "Archea",
+                             grepl("k__Euk", lineage) ~ "Eukaryota",
+                             TRUE ~ "other"))
+
+meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+  select(-V1) %>%
+  mutate(sample = as.character(sample))
+
+merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
+
+```
+
+whole subject virome bray-curtis
+```{r}
+wide_virome_dt <- merge_dt %>%
+  filter(kingdom == "Virus") %>%
+  select(-kingdom) %>%
+  group_by(mask_id, lineage) %>%
+  summarize(s_abundance = sum(rel_abundance)) %>%
+  ungroup() %>%
+  group_by(mask_id) %>%
+  summarize(total_rel_abundance = s_abundance / sum(s_abundance),
+            lineage = lineage) %>%
+  ungroup() %>%
+  pivot_wider(names_from = lineage, 
+            values_from = total_rel_abundance, 
+            values_fill = 0)
+
+subject_id_l <- wide_virome_dt$mask_id
+
+wide_virome_dt <- wide_virome_dt %>% select(-mask_id)
+
+bray_curtis_dist <- vegdist(wide_virome_dt, method="bray")
+
+bray_curtis_mat <- as.matrix(bray_curtis_dist)
+
+bray_curtis_df <- as.data.frame(bray_curtis_mat)
+
+colnames(bray_curtis_df) <- subject_id_l
+rownames(bray_curtis_df) <- subject_id_l
+bray_curtis_df$mask_id1 <- rownames(bray_curtis_df)
+
+bray_long <- melt(setDT(bray_curtis_df), 
+                  id.vars = c("mask_id1"), 
+                  variable.name = "mask_id2") %>%
+  filter(mask_id1 != mask_id2)
+
+bray_long$kingdom <- "Virus"
+```
+
+whole subject bacteriom bray-curtis
+```{r}
+wide_bacteriome_dt <- merge_dt %>%
+  filter(kingdom == "Bacteria") %>%
+  select(-kingdom) %>%
+  group_by(mask_id, lineage) %>%
+  summarize(s_abundance = sum(rel_abundance)) %>%
+  ungroup() %>%
+  group_by(mask_id) %>%
+  summarize(total_rel_abundance = s_abundance / sum(s_abundance),
+            lineage = lineage) %>%
+  ungroup() %>%
+  pivot_wider(names_from = lineage, 
+            values_from = total_rel_abundance, 
+            values_fill = 0)
+
+subject_id_l <- wide_bacteriome_dt$mask_id
+
+wide_bacteriome_dt <- wide_bacteriome_dt %>% select(-mask_id)
+
+bray_curtis_dist <- vegdist(wide_bacteriome_dt, method="bray")
+
+bray_curtis_mat <- as.matrix(bray_curtis_dist)
+
+bray_curtis_df <- as.data.frame(bray_curtis_mat)
+
+colnames(bray_curtis_df) <- subject_id_l
+rownames(bray_curtis_df) <- subject_id_l
+bray_curtis_df$mask_id1 <- rownames(bray_curtis_df)
+
+bac_bray_long <- melt(setDT(bray_curtis_df), 
+                  id.vars = c("mask_id1"), 
+                  variable.name = "mask_id2") %>%
+  filter(mask_id1 != mask_id2)
+
+bac_bray_long$kingdom <- "Bacteria"
+```
+
+plot difference
+```{r}
+stat.test_kingdom <- rbind(bray_long, bac_bray_long) %>%
+  wilcox_test(value ~ kingdom, paired = TRUE) %>%
+  add_significance(p.col="p", output.col="p.signif")
+stat.test_kingdom
+
+rbind(bray_long, bac_bray_long) %>%
+  ggplot(aes(factor(kingdom), value)) +
+  geom_violin(aes(fill = factor(kingdom)), outlier.shape = NA, alpha = 0.6,
+              draw_quantiles = c(0.25, 0.75), linetype = "dotted") +
+  geom_violin(fill="transparent", draw_quantiles = c(0.5)) +
+  theme_bw() + 
+  xlab("") + 
+  ylab("Bray-Curtis Distance\nBetween Subjects") + 
+  scale_fill_manual(values=c("#F2AD00", "#5BBCD6")) +
+  stat_pvalue_manual(stat.test_kingdom, label = "p.signif", y.position=1.05, tip.length = 0.01) +
+  theme(axis.text.x = element_text(angle = 90, hjust=0.8), legend.position = "Off")
+
+ggsave(sprintf("%s/charts/bacteria_vs_virus_whole_subject_bray_dist.pdf", find_rstudio_root_file()), width = 3, height = 3)
+
+## save stats table
+stat.test_kingdom <- as.data.frame(stat.test_kingdom)
+stat.test_kingdom <- apply(stat.test_kingdom,2,as.character)
+write.csv(stat.test_kingdom, file=sprintf("%s/intermediate_files/bacteria_vs_virus_whole_subject_bray_dist", find_rstudio_root_file()))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

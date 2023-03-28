@@ -1,0 +1,175 @@
+---
+title: "Make tSNE for bacteria and virus SGBs, color by metadata"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(rprojroot)
+library(Rtsne)
+library(cowplot)
+
+```
+
+set paths and filenames
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+
+```
+
+load long data table, filter by SGBs detected in over 100 samples
+```{r}
+long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+  select(sampleID, rel_abundance, lineage) %>%
+  mutate(kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
+                             grepl("k__Vir", lineage) ~ "Virus",
+                             grepl("k__Ar", lineage) ~ "Archea",
+                             grepl("k__Euk", lineage) ~ "Eukaryota",
+                             TRUE ~ "other")) %>%
+  group_by(lineage) %>%
+  filter(n() >= 100) %>%
+  ungroup()
+
+wide_bac_sp_dt <- long_dt %>%
+  filter(kingdom == "Bacteria") %>%
+  select(-kingdom) %>%
+  pivot_wider(names_from = lineage, values_from = rel_abundance, values_fill = 0)
+
+sampleID_l <- wide_bac_sp_dt$sampleID
+
+
+wide_bac_sp_dt <- wide_bac_sp_dt %>% select(-sampleID)
+
+
+wide_vir_sp_dt <- long_dt %>%
+  filter(kingdom == "Virus") %>%
+  select(-kingdom) %>%
+  pivot_wider(names_from = lineage, values_from = rel_abundance, values_fill = 0)
+
+sampleID_x <- wide_vir_sp_dt$sampleID
+
+
+wide_vir_sp_dt <- wide_vir_sp_dt %>% select(-sampleID)
+```
+
+load metadata table
+```{r}
+meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+  select(-V1) %>%
+  mutate(sample = as.character(sample))
+```
+
+run bacteria PCA
+```{r}
+bac_prcomp1 <- prcomp(wide_bac_sp_dt)
+names(bac_prcomp1)
+#plot(bac_prcomp1$x[,1:2], pch = ".")
+
+emb_bac <- Rtsne::Rtsne(bac_prcomp1$x[,1:20], perplexity = 20)
+
+embb_bac <- emb_bac$Y
+
+rownames(embb_bac) <- sampleID_l
+
+embb_bac_dt <- as.data.frame(embb_bac) %>%
+  setDT(., keep.rownames = "sampleID")
+
+embb_bac_meta_dt <- merge(embb_bac_dt, meta_dt, by.x = "sampleID", by.y = "sample") %>%
+  mutate(Country = case_when(
+         country == 1 ~ "USA",
+         country == 2 ~ "FIN",
+         country == 3 ~ "GER",
+         country == 4 ~ "SWE",
+         TRUE ~ "other"
+       ))
+
+bac_dayp <- embb_bac_meta_dt %>%
+  ggplot(aes(x=V1, y=V2, color=age_days, shape = Country)) +
+  geom_point(size = 1.3, alpha = 0.5) +
+  scale_color_gradient2(low = "maroon", mid = "grey", high = "#3F3F7B", 
+                        midpoint = 500, limits = c(0,1400), na.value = "black", name = "Day of Life") +
+  scale_shape_manual(values=c(15, 16, 17, 18)) +
+  theme_bw() +
+  labs(x = "tSNE-1", y = "tSNE-2", title = "tSNE of Bacteria in TEDDY samples")
+bac_dayp
+
+bac_T1Dp <- embb_bac_meta_dt %>%
+  ggplot(aes(x=V1, y=V2, color=T1D, shape = Country)) +
+  geom_point(size = 1.3, alpha = 0.5) +
+  scale_color_manual(values=c("#8CBEB1", "red")) +
+  scale_shape_manual(values=c(15, 16, 17, 18)) +
+  theme_bw() +
+  labs(x = "tSNE-1", y = "tSNE-2", title = "tSNE of Bacteria in TEDDY samples")
+bac_T1Dp
+
+```
+
+
+run virus PCA
+```{r}
+vir_prcomp1 <- prcomp(wide_vir_sp_dt)
+
+#plot(vir_prcomp1$x[,1:2], pch = ".")
+
+emb_vir <- Rtsne::Rtsne(vir_prcomp1$x[,1:20], perplexity = 20)
+
+emb_vir <- emb_vir$Y
+
+rownames(emb_vir) <- sampleID_x
+
+embb_vir_dt <- as.data.frame(emb_vir) %>%
+  setDT(., keep.rownames = "sampleID")
+
+embb_vir_meta_dt <- merge(embb_vir_dt, meta_dt, by.x = "sampleID", by.y = "sample") %>%
+  mutate(Country = case_when(
+         country == 1 ~ "USA",
+         country == 2 ~ "FIN",
+         country == 3 ~ "GER",
+         country == 4 ~ "SWE",
+         TRUE ~ "other"
+       ))
+
+vir_dayp <- embb_vir_meta_dt %>%
+  ggplot(aes(x=V1, y=V2, color=age_days, shape = Country)) +
+  geom_point(size = 1.3, alpha = 0.5) +
+  scale_color_gradient2(low = "maroon", mid = "grey", high = "#3F3F7B", 
+                        midpoint = 500, limits = c(0,1400), na.value = "black", name = "Day of Life") +
+  scale_shape_manual(values=c(15, 16, 17, 18)) +
+  theme_bw() +
+  labs(x = "tSNE-1", y = "tSNE-2", title = "tSNE of Viruses in TEDDY samples")
+vir_dayp
+
+vir_T1Dp <- embb_vir_meta_dt %>%
+  ggplot(aes(x=V1, y=V2, color=T1D, shape = Country)) +
+  geom_point(size = 1.3, alpha = 0.5) +
+  scale_color_manual(values=c("#8CBEB1", "red")) +
+  scale_shape_manual(values=c(15, 16, 17, 18)) +
+  theme_bw() +
+  labs(x = "tSNE-1", y = "tSNE-2", title = "tSNE of Viruses in TEDDY samples")
+vir_T1Dp
+
+
+```
+
+combine and save
+```{r}
+tSNE_combp <- plot_grid(bac_dayp, bac_T1Dp, vir_dayp, vir_T1Dp, align = "h", nrow = 2)
+
+ggsave(tSNE_combp, file = sprintf("%s/charts/tSNE_bacteria_vs_virus_all_samples.pdf", find_rstudio_root_file()), width = 8, height = 8)
+
+```
+
+
+
+
+
+
+

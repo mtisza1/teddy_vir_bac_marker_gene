@@ -1,0 +1,107 @@
+---
+title: "plot AUC for ROC random forest classifiers"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(vegan)
+library(ggpubr)
+library(rstatix)
+library(cowplot)
+
+```
+
+
+
+load files iteratively and combine
+```{r}
+#file_list <- list.files(path = "test_files/", pattern = "\\.detected_species.tsv$")
+
+if (exists("auc_dataset")){
+  rm(auc_dataset)
+}
+
+file_list <- Sys.glob(sprintf("%s/intermediate_files/random_forest_outputs/rf_ROC_AUC_*_pat_groups.tsv", find_rstudio_root_file()))
+for (file in file_list){
+      
+  # if the merged dataset doesn't exist, create it
+  if (!exists("auc_dataset")){
+    auc_dataset <- read.table(file, header=TRUE, sep="\t")
+  }
+  
+  # if the merged dataset does exist, append to it
+  else if (exists("auc_dataset")){
+    temp_dataset <-read.table(file, header=TRUE, sep="\t")
+    auc_dataset<-rbind(auc_dataset, temp_dataset)
+    rm(temp_dataset)
+  }
+}
+```
+
+plot T1D stats
+```{r}
+T1D_p <- auc_dataset %>%
+  filter(Feature_type == "Disease") %>%
+  ggplot(aes(Kingdom, AUC)) +
+  geom_hline( yintercept = 0.5, color = "grey30", size = 1.5) +
+  geom_boxplot(aes(fill = Kingdom), alpha = 0.8, outlier.size = 0.5) + 
+  facet_wrap(vars(Variable), nrow = 1) +
+  ylim(0.42, 1.1) + 
+  theme_bw() + 
+  ylab("") + 
+  xlab("Condition") + 
+  scale_fill_manual(values=c("#F2AD00", "#5BBCD6", "#93AD90")) + 
+  theme(legend.position='none', 
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+T1D_p
+
+```
+plot country stats
+```{r}
+
+country_p <- auc_dataset %>%
+  filter(Feature_type == "Country") %>%
+  ggplot(aes(Kingdom, AUC)) + 
+  geom_hline( yintercept = 0.5, color = "grey30", size = 1.5) +
+  geom_boxplot(aes(fill = Kingdom), alpha = 0.8, outlier.size = 0.5) + 
+  ylim(0.42, 1.1) + 
+  facet_wrap(~Variable, nrow = 1) +
+  stat_compare_means(label = "p.signif",
+                     comparisons = 
+                       list(c("All", "Bacteria"), c("Virus", "All"),
+                            c("Bacteria", "Virus"))) +
+  theme_bw() + 
+  ylab("random forest performance (area under curve)") + 
+  xlab("Country") + 
+  scale_fill_manual(values=c("#93AD90", "#F2AD00", "#5BBCD6")) +
+  theme(legend.position="left", 
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+
+country_p 
+```
+
+combine plots
+```{r}
+xp <- plot_grid(country_p, T1D_p, align = "h", nrow = 1, rel_widths = c(70/100, 30/100))
+xp
+ggsave(xp, file = sprintf("%s/charts/rf_AUC_plots_all_types1.pdf", find_rstudio_root_file()), width = 8, height = 5)
+
+```
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,7 @@
+data/
+intermediate_files/
+.DS_Store
+**/.DS_Store
+.Rdata
+.Rhistory
+.Rproj.user/

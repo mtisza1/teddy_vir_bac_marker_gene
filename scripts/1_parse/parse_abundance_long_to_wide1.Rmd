@@ -1,0 +1,100 @@
+---
+title: "Make wide-form table (bacteria/virus, genus/species) from big long form abundance table"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+```
+
+
+load longform table with all the abundance data, parse and filter
+```{r}
+## using find_rstudio_root_file() in order to avoid relative paths
+long_dt <- fread(sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file()), sep = "\t", header = T)
+
+## make columns for species and genus
+long_dt <- long_dt %>%
+  mutate(species = gsub(".*s__","s__", lineage ), genus = gsub(".*g__","g__", lineage ), kingdom = gsub("\\|.*", "", lineage)) %>%
+  mutate(genus = gsub("\\|s__.*", "", genus)) %>%
+  ## filter out columns not being kept for wide form
+  subset(select = c("rel_abundance", "sampleID", "species", "genus", "kingdom"))
+
+long_dt$sampleID <- as.character(long_dt$sampleID)
+
+```
+
+make wideform table: virus species
+```{r}
+wide_vir_sp_dt <- long_dt %>%
+  subset( select = c("kingdom", "species", "rel_abundance", "sampleID")) %>%
+  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %>%
+  filter(kingdom == "k__Viruses") %>%
+  select(-kingdom)
+
+write.table(wide_vir_sp_dt, file = sprintf("%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.virus_species.wide.tsv", find_rstudio_root_file()), quote = F, sep = "\t", row.names = F, col.names = T)
+rm(wide_vir_sp_dt)
+```
+
+make wideform table: bacteria species
+```{r}
+wide_bac_sp_dt <- long_dt %>%
+  subset( select = c("kingdom", "species", "rel_abundance", "sampleID")) %>%
+  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %>%
+  filter(kingdom == "k__Bacteria") %>%
+  select(-kingdom)
+
+write.table(wide_bac_sp_dt, file = sprintf("%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.bacteria_species.wide.tsv", find_rstudio_root_file()), quote = F, sep = "\t", row.names = F, col.names = T)
+rm(wide_bac_sp_dt)
+```
+
+make wideform table: virus genera
+```{r}
+wide_vir_ge_dt <- long_dt %>%
+  subset( select = c("kingdom", "genus", "rel_abundance", "sampleID")) %>%
+  group_by(genus, sampleID) %>%
+  mutate(rel_abundance = sum(rel_abundance)) %>%
+  distinct() %>%
+  ungroup() %>%
+  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %>%
+  filter(kingdom == "k__Viruses") %>%
+  select(-kingdom)
+
+write.table(wide_vir_ge_dt, file = sprintf("%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.virus_genus.wide.tsv", find_rstudio_root_file()), quote = F, sep = "\t", row.names = F, col.names = T)
+rm(wide_vir_ge_dt)
+```
+
+make wideform table: bacteria genera
+```{r}
+wide_bac_ge_dt <- long_dt %>%
+  subset( select = c("kingdom", "genus", "rel_abundance", "sampleID")) %>%
+  group_by(genus, sampleID) %>%
+  mutate(rel_abundance = sum(rel_abundance)) %>%
+  distinct() %>%
+  ungroup() %>%
+  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %>%
+  filter(kingdom == "k__Bacteria") %>%
+  select(-kingdom)
+
+write.table(wide_bac_ge_dt, file = sprintf("%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.bacteria_genus.wide.tsv", find_rstudio_root_file()), quote = F, sep = "\t", row.names = F, col.names = T)
+rm(wide_bac_ge_dt)
+```
+
+check archaea prevalence
+```{r}
+long_dt %>%
+  filter(kingdom == "k__Archaea") %>%
+  arrange(desc(rel_abundance))
+```
+
+
+
+
+
+
+

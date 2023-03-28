@@ -1,0 +1,140 @@
+---
+title: "Summarize IpHOP host assignment for VCs and vOTUs"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(rprojroot)
+library(cowplot)
+library(nationalparkcolors)
+library(forcats)
+```
+
+set paths and filenames
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
+iphop_table=sprintf("%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv", find_rstudio_root_file())
+taxonomy_table=sprintf("%s/data/TGVG_database_v1.1.VC_taxonomy_table.csv", find_rstudio_root_file())
+
+```
+
+load tables and add host taxonomy to viruses
+```{r}
+long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+  mutate(species = gsub(".*s__","s__", lineage ), 
+         genus = gsub(".*g__","g__", lineage ),
+         sampleID = as.character(sampleID)) %>%
+  mutate(genus = gsub("\\|s__.*", "", genus),
+         kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
+                           grepl("k__Vir", lineage) ~ "Virus",
+                           grepl("k__Ar", lineage) ~ "Archea",
+                           grepl("k__Euk", lineage) ~ "Eukaryota",
+                           TRUE ~ "other")) %>%
+  ## only keep viruses
+  filter(kingdom == "Virus") %>%
+  ## filter out columns not being kept for wide form
+  subset(select = c("rel_abundance", "sampleID", "species", "genus"))
+
+tax_dt <- fread(sprintf("%s", taxonomy_table), sep = ",", header = T) %>%
+  select(c(name, Species))
+
+iphop_dt <- fread(sprintf("%s", iphop_table), sep = ",", header = T, col.names = c("name", "AAI", "host_lineage", "confidence", "methods")) %>%
+  mutate(host_genus = gsub(".*g__","g__", host_lineage),
+         host_family = gsub(";g__.*","", host_lineage))
+
+merge_dt <- merge(long_dt, tax_dt, by.x = "species", by.y = "Species", all.x = T)
+
+merge_dt <- merge(merge_dt, iphop_dt, by = "name", all.x = T)
+
+```
+
+get most likely bacterial host for each VC
+```{r}
+VC_prev_dt <- merge_dt %>%
+  group_by(genus) %>%
+  summarize(prevalence = n_distinct(sampleID),
+            virus_SGBs_detected = n_distinct(species),
+            avg_rel_abundance = mean(rel_abundance))
+
+
+VC_host_dt <- merge_dt %>%
+  distinct(genus, species, host_family) %>%
+  filter(host_family != "NA") %>%
+  group_by(genus) %>%
+  count(host_family) %>%
+  slice(which.max(n))
+
+VC_info_dt <- merge(VC_prev_dt, VC_host_dt, by = "genus", all.x = T)
+
+VC_info_dt$host_family <- 
+  with(VC_info_dt, ave(host_family, host_family, 
+                       FUN = function(i) replace(i, length(i) < 25, 'X_Other')))
+
+
+host_genus_count <- VC_info_dt %>%
+  group_by(host_family) %>%
+  summarize(count = n())
+```
+
+plot VC host and prevalence
+```{r}
+pal <- park_palette("Saguaro")
+coul <- colorRampPalette(pal)(36)
+
+scatterp <- VC_info_dt %>%
+  ggplot() + 
+  geom_point(aes(x = prevalence, size = virus_SGBs_detected, color = host_family, y = avg_rel_abundance), alpha = 0.7, stroke = 0) + 
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_color_manual(values = coul, na.value="grey85", 
+                     labels = function(x) sub('.*f__', '', x)) +
+  labs(y="Average Rel. Abundance", 
+       x="number of samples with VC detected", 
+       size="# SGBs from VC\nDetected in\nTEDDY Samples", 
+       col="Host Family") +
+  guides(colour = guide_legend(override.aes = list(size=3), nrow=12)) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+scatterp
+ggsave(file = sprintf("%s/charts/virus_cluster_host_and_prevalence_all_samples.pdf", find_rstudio_root_file()), width= 9, height = 7)
+```
+
+plot host genus count
+```{r}
+colp <- host_genus_count %>%
+  ggplot(aes(x = reorder(host_family, count), y = count, fill = host_family)) +
+  geom_col() +
+  scale_fill_manual(values = coul, na.value="grey85") +
+  scale_x_discrete(labels = function(x) sub('.*f__', '', x)) +
+  labs(x = "", y = "# of VCs assigned to family") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), legend.position = "Off")
+colp
+```
+combine plots
+```{r}
+VC_combp <- plot_grid(scatterp, colp, align = "h", nrow = 2, rel_heights = c(70/100, 30/100))
+VC_combp
+ggsave(VC_combp, file = sprintf("%s/charts/VC_prevalence_and_host_info.pdf", find_rstudio_root_file()), width = 9, height = 11)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,102 @@
+---
+title: "Making paired dot-plot with total bacteria OTUs vs vOTUs for each patient and side plot for # samples vs difference multiple"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(rprojroot)
+
+```
+
+set paths and filenames
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+
+```
+
+load long table and metadata
+```{r}
+long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+  select(sampleID, rel_abundance, lineage) %>%
+  mutate(kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
+                             grepl("k__Vir", lineage) ~ "Virus",
+                             grepl("k__Ar", lineage) ~ "Archea",
+                             grepl("k__Euk", lineage) ~ "Eukaryota",
+                             TRUE ~ "other"),
+         sampleID = as.character(sampleID)) %>%
+  filter(kingdom == "Virus" | kingdom == "Bacteria")
+
+meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+  select(-V1) %>%
+  mutate(sample = as.character(sample))
+```
+
+merge tables and parse for # samples, unique virus and bacterial SGBs
+```{r}
+merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y = "sample")
+
+unique_taxa_dt <- merge_dt %>%
+  group_by(mask_id, kingdom) %>%
+  summarize(distinct_taxa = n_distinct(lineage)
+            )
+
+subject_samples_dt <- merge_dt %>%
+  group_by(mask_id) %>%
+  summarize(total_samples = n_distinct(sampleID))
+
+unique_taxa_dt <- merge(unique_taxa_dt, subject_samples_dt, by = "mask_id")
+
+wide_unique_dt <- unique_taxa_dt %>%
+  pivot_wider(names_from = c(kingdom), values_from = c(distinct_taxa, total_samples), values_fill = 0)
+```
+
+plot detected taxa by # of samples
+```{r}
+wide_unique_dt %>% ggplot() +
+  geom_linerange(aes(x = total_samples_Virus, ymin = distinct_taxa_Bacteria, ymax = distinct_taxa_Virus), color="#D3DDDC", alpha=0.2) +
+  geom_point(aes(x = total_samples_Virus, y = distinct_taxa_Virus, color = "#5BBCD6"), alpha=0.6, stroke=0, size=1.5) +
+  geom_point(aes(x = total_samples_Virus, y = distinct_taxa_Bacteria, color = "#F2AD00"), alpha=0.6, stroke=0, size=1.5) +
+  theme_bw() +
+  ylab("SGBs observed") +
+  xlab("Number of Longitudinal Samples") +
+  scale_colour_manual(name = 'SGB type', values =c('#5BBCD6'='#5BBCD6', '#F2AD00'='#F2AD00'), labels = c('Virus','Bacteria')) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+
+ggsave(file = sprintf("%s/charts/unique_observed_bacteria_vs_virus_by_subject.pdf", find_rstudio_root_file()), width = 4, height = 3)
+
+```
+
+plot ratio
+```{r}
+wide_unique_dt %>% ggplot() +
+  geom_point(aes(x = total_samples_Virus, y = (distinct_taxa_Virus/distinct_taxa_Bacteria)), alpha=0.6, color = "#899DA4", stroke = 0, size=1.5) +
+  geom_smooth(aes(x=total_samples_Virus, y=(distinct_taxa_Virus/distinct_taxa_Bacteria)), color="#C93312", ) + 
+  theme_bw() +
+  ylab("ratio(virus SGBs/bacterial SGBs)") +
+  xlab("# samples") 
+
+ggsave(file = sprintf("%s/charts/virus_to_bacteria_ratio_by_subject.pdf", find_rstudio_root_file()), width = 3, height = 4)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

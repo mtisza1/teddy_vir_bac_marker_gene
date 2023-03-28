@@ -1,0 +1,190 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(micropan)
+
+```
+
+set paths and filenames
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+
+```
+
+load long table and metadata, merge 
+```{r}
+## make columns for species and genus
+long_dt <- 
+  fread(sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file()), 
+        sep = "\t", header = T) %>%
+  mutate(species = gsub(".*s__","s__", lineage ), genus = gsub(".*g__","g__", lineage ), kingdom = gsub("\\|.*", "", lineage)) %>%
+  mutate(genus = gsub("\\|s__.*", "", genus)) %>%
+  ## filter out columns not being kept for wide form
+  subset(select = c("rel_abundance", "sampleID", "species", "genus", "kingdom"))
+
+meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+  select(-V1)
+
+
+
+merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
+
+detect_dt <- merge_dt %>%
+  group_by(kingdom, genus, species, mask_id) %>%
+  summarize(samples_detected = n()) %>%
+  ungroup()
+
+dim(
+  detect_dt %>% ungroup() %>%
+    distinct(mask_id)
+)
+```
+
+
+rarefaction: virus species by subject
+```{r}
+## make wideform
+wide_vir_sp_dt <- detect_dt %>%
+  select(-genus) %>%
+  pivot_wider(names_from = mask_id, values_from = samples_detected, values_fill = 0) %>%
+  filter(kingdom == "k__Viruses") %>%
+  select(-kingdom)
+
+## convert to format needed for micropan rarefaction
+wide_vir_sp_dt <- as.data.frame(wide_vir_sp_dt)
+rownames(wide_vir_sp_dt) <- wide_vir_sp_dt$species
+wide_vir_sp_dt <- subset(wide_vir_sp_dt, select = -species) %>% t()
+
+## run micropan rarefaction and get basic stats
+Vir_sp_rare <- rarefaction(wide_vir_sp_dt, n.perm = 50)
+Vir_sp_rare$avg <- rowMeans(Vir_sp_rare[,-1], na.rm=TRUE)
+Vir_sp_rare$max_g <- apply(Vir_sp_rare[,-1], 1, max)
+Vir_sp_rare$min_g <- apply(Vir_sp_rare[,-1], 1, min)
+Vir_sp_rare$level <- "Virus SGB"
+
+rm(wide_vir_sp_dt)
+```
+
+rarefaction: bacteria species by subject
+```{r}
+## make wideform
+wide_bac_sp_dt <- detect_dt %>%
+  select(-genus) %>%
+  pivot_wider(names_from = mask_id, values_from = samples_detected, values_fill = 0) %>%
+  filter(kingdom == "k__Bacteria") %>%
+  select(-kingdom)
+
+## convert to format needed for micropan rarefaction
+wide_bac_sp_dt <- as.data.frame(wide_bac_sp_dt)
+rownames(wide_bac_sp_dt) <- wide_bac_sp_dt$species
+wide_bac_sp_dt <- subset(wide_bac_sp_dt, select = -species) %>% t()
+
+## run micropan rarefaction and get basic stats
+Bac_sp_rare <- rarefaction(wide_bac_sp_dt, n.perm = 50)
+Bac_sp_rare$avg <- rowMeans(Bac_sp_rare[,-1], na.rm=TRUE)
+Bac_sp_rare$max_g <- apply(Bac_sp_rare[,-1], 1, max)
+Bac_sp_rare$min_g <- apply(Bac_sp_rare[,-1], 1, min)
+Bac_sp_rare$level <- "Bacteria SGB"
+
+rm(wide_bac_sp_dt)
+```
+
+rarefaction: virus genera by subject
+```{r}
+wide_vir_ge_dt <- detect_dt %>%
+  subset( select = c("kingdom", "genus", "samples_detected", "mask_id")) %>%
+  group_by(genus, mask_id) %>%
+  mutate(samples_detected = sum(samples_detected)) %>%
+  distinct() %>%
+  ungroup() %>%
+  pivot_wider(names_from = mask_id, values_from = samples_detected, values_fill = 0) %>%
+  filter(kingdom == "k__Viruses") %>%
+  select(-kingdom)
+
+## convert to format needed for micropan rarefaction
+wide_vir_ge_dt <- as.data.frame(wide_vir_ge_dt)
+rownames(wide_vir_ge_dt) <- wide_vir_ge_dt$genus
+wide_vir_ge_dt <- subset(wide_vir_ge_dt, select = -genus) %>% t()
+
+## run micropan rarefaction and get basic stats
+Vir_ge_rare <- rarefaction(wide_vir_ge_dt, n.perm = 50)
+Vir_ge_rare$avg <- rowMeans(Vir_ge_rare[,-1], na.rm=TRUE)
+Vir_ge_rare$max_g <- apply(Vir_ge_rare[,-1], 1, max)
+Vir_ge_rare$min_g <- apply(Vir_ge_rare[,-1], 1, min)
+Vir_ge_rare$level <- "Virus VC"
+
+rm(wide_vir_ge_dt)
+```
+
+make wideform table: bacteria genera by subject
+```{r}
+wide_bac_ge_dt <- detect_dt %>%
+  subset( select = c("kingdom", "genus", "samples_detected", "mask_id")) %>%
+  group_by(genus, mask_id) %>%
+  mutate(samples_detected = sum(samples_detected)) %>%
+  distinct() %>%
+  ungroup() %>%
+  pivot_wider(names_from = mask_id, values_from = samples_detected, values_fill = 0) %>%
+  filter(kingdom == "k__Bacteria") %>%
+  select(-kingdom)
+
+## convert to format needed for micropan rarefaction
+wide_bac_ge_dt <- as.data.frame(wide_bac_ge_dt)
+rownames(wide_bac_ge_dt) <- wide_bac_ge_dt$genus
+wide_bac_ge_dt <- subset(wide_bac_ge_dt, select = -genus) %>% t()
+
+## run micropan rarefaction and get basic stats
+Bac_ge_rare <- rarefaction(wide_bac_ge_dt, n.perm = 50)
+Bac_ge_rare$avg <- rowMeans(Bac_ge_rare[,-1], na.rm=TRUE)
+Bac_ge_rare$max_g <- apply(Bac_ge_rare[,-1], 1, max)
+Bac_ge_rare$min_g <- apply(Bac_ge_rare[,-1], 1, min)
+Bac_ge_rare$level <- "Bacteria Genus"
+
+rm(wide_bac_ge_dt)
+```
+
+rbind all the rarefaction dataframes
+```{r}
+multi_rare <- rbind(Vir_sp_rare, Bac_sp_rare, Vir_ge_rare, Bac_ge_rare)
+
+```
+
+plot rarefaction curves
+```{r}
+custom_scale <- (c("#FF0000", "#F2AD00", "#5BBCD6", "#00A08A"))
+
+multi_rare %>% ggplot(aes(x=Genome,y=avg)) +
+	geom_ribbon(aes(x=Genome,ymin=min_g,ymax=max_g,fill=level),alpha=0.3) +
+	geom_line(aes(x=Genome,y=avg,col=level)) +
+	xlab("Subjects Sampled") + 
+	scale_y_continuous(name="Taxa Detected", labels = scales::comma) +
+	scale_color_manual(values=custom_scale) +  
+	scale_fill_manual(values=custom_scale) +
+	theme_bw()
+
+ggsave(sprintf("%s/charts/different_taxa_levels_rarefaction_by_patient1.pdf", find_rstudio_root_file()), width = 5, height = 4)
+
+```
+
+
+
+
+
+
+
+
+
+
+

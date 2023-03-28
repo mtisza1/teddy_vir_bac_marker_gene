@@ -1,0 +1,127 @@
+---
+title: "Analyzing and plotting crAssvirales abundance/prevalence across age"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(rprojroot)
+library(cowplot)
+
+```
+
+set paths and filenames
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+crassvirales_table=sprintf("%s/data/TGVG_database_v1.1.crassvirales_tbl.tsv", find_rstudio_root_file())
+taxonomy_table=sprintf("%s/data/TGVG_database_v1.1.VC_taxonomy_table.csv", find_rstudio_root_file())
+
+```
+
+load tables and filter to crassvirales
+```{r}
+long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+  mutate(species = gsub(".*s__","s__", lineage),
+         sampleID = as.character(sampleID)) %>%
+  ## filter out columns not being kept for wide form
+  subset(select = c("rel_abundance", "sampleID", "species"))
+
+tax_dt <- fread(sprintf("%s", taxonomy_table), sep = ",", header = T)
+
+crass_names_dt <- fread(sprintf("%s", crassvirales_table), sep = "\t", header = F, col.names = c("name", "crass_category"))
+
+meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+  select(-V1) %>%
+  mutate(sample = as.character(sample))
+
+crass_abundance_dt <- merge(long_dt, tax_dt, by.x = "species", by.y = "Species")
+
+crass_abundance_dt <- merge(crass_abundance_dt, crass_names_dt, by = "name")
+
+crass_abundance_dt %>% distinct(sampleID)
+
+crass_abundance_dt <- crass_abundance_dt %>%
+  group_by(sampleID) %>%
+  summarize(crass_rel_abundance = sum(rel_abundance))
+```
+
+add missing data as zero and metadata
+```{r}
+## this functions rounds a number up to the nearest 100
+round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
+
+all_sampleIDs <- long_dt %>%
+  distinct(sampleID)
+crass_w_missing <- merge(all_sampleIDs, crass_abundance_dt, 
+                         by = "sampleID", all.x = T) %>% 
+  replace(is.na(.), 0)
+
+crass_meta_dt <- merge(meta_dt, crass_w_missing, 
+                       by.x = "sample", by.y = "sampleID") %>%
+  mutate(rounded_DOL =  round_any(age_days, 100))
+
+
+```
+
+plot prevalence and relative abundance
+```{r}
+abundp <- crass_meta_dt %>%
+  filter(rounded_DOL <= 1400) %>%
+  group_by(rounded_DOL) %>%
+  summarize(crass_rel_abundance = mean(crass_rel_abundance)) %>%
+  ungroup() %>%
+  ggplot(aes(x = rounded_DOL, y = crass_rel_abundance)) +
+  geom_point() +
+  geom_smooth(color = "brown") +
+  ylim(0,NA) +
+  theme_bw() +
+  labs(y="Relative Abundance of Crassvirales", x="Day of Life") +
+  scale_y_continuous(labels = scales::percent)
+abundp
+
+prevp <- crass_meta_dt %>%
+  filter(rounded_DOL <= 1400) %>%
+  group_by(rounded_DOL) %>%
+  summarize(crass_samples = sum(crass_rel_abundance > 0),
+            total_samples = n()) %>%
+  ungroup() %>%
+  ggplot(aes(x = rounded_DOL, y = (crass_samples/total_samples), fill = total_samples)) +
+  geom_col() +
+  scale_fill_gradient(low = "#F5D2E6", high = "#EB8D43", na.value = NA, name = "Total\nSamples") +
+  ylim(0,NA) +
+  theme_bw() +
+  labs(y="Prevalence of Crassvirales", x="Day of Life") +
+  scale_y_continuous(labels = scales::percent)
+prevp
+```
+
+combine plots
+```{r}
+crass_combp <- plot_grid(prevp, abundp, align = "h", nrow = 1)
+crass_combp
+ggsave(crass_combp, file = sprintf("%s/charts/crassvirales_prevalence_and_abundance.pdf", find_rstudio_root_file()), width = 7, height = 5)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
