@@ -4,6 +4,7 @@ output: html_notebook
 ---
 
 load packages
+
 ```{r}
 library(ggplot2)
 library(data.table)
@@ -19,6 +20,7 @@ library(cowplot)
 ```
 
 set paths and filenames
+
 ```{r}
 ### files
 long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
@@ -26,7 +28,8 @@ metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery
 
 ```
 
-load long table and metadata, merge 
+load long table and metadata, merge
+
 ```{r}
 long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
   select(sampleID, rel_abundance, lineage) %>%
@@ -46,6 +49,7 @@ merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
 ```
 
 wide format, bray-curtis, VIROME
+
 ```{r}
 
 mask_id_list <- as.list(
@@ -109,6 +113,7 @@ big_bray_long <- big_bray_long %>%
 ```
 
 quick plot of days apart vs bray-curtis distance, virome
+
 ```{r}
 big_bray_long %>%
   ggplot(aes(x= days_apart, y = bray_curtis)) +
@@ -118,6 +123,7 @@ big_bray_long %>%
 ```
 
 get bray-curtis distance to next sample VIROME
+
 ```{r}
 vir_next_bray_dt <- big_bray_long %>%
   group_by(mask_id1) %>%
@@ -131,6 +137,7 @@ vir_next_bray_dt <- merge(vir_next_bray_dt, meta_dt, by.x = "sampleID1", by.y = 
 ```
 
 plot average bray distance by T1D and country status VIROME
+
 ```{r}
 ## statistical test
 stat.test_vir_t1d <- vir_next_bray_dt %>%
@@ -224,6 +231,7 @@ write.csv(stat.test_vir_country, file=sprintf("%s/intermediate_files/wilcoxon_vi
 ```
 
 intrasubject bray-curtis, BACTERIOME
+
 ```{r}
 
 mask_id_list <- as.list(
@@ -286,7 +294,8 @@ bac_bray_long <- bac_bray_long %>%
   rename(bray_curtis = value)
 ```
 
-quick plot of days apart vs bray-curtis distance, virome
+quick plot of days apart vs bray-curtis distance, bacteriome
+
 ```{r}
 bac_bray_long %>%
   ggplot(aes(x= days_apart, y = bray_curtis)) +
@@ -296,6 +305,7 @@ bac_bray_long %>%
 ```
 
 get bray-curtis distance to next sample BACTERIOME
+
 ```{r}
 bac_next_bray_dt <- bac_bray_long %>%
   group_by(mask_id1) %>%
@@ -308,7 +318,8 @@ bac_next_bray_dt <- merge(bac_next_bray_dt, meta_dt, by.x = "sampleID1", by.y = 
   
 ```
 
-plot average bray distance by T1D and country status VIROME
+plot average bray distance by T1D and country status BACTERIOME
+
 ```{r}
 ## statistical test
 stat.test_bac_t1d <- bac_next_bray_dt %>%
@@ -402,6 +413,7 @@ write.csv(stat.test_bac_country, file=sprintf("%s/intermediate_files/wilcoxon_ba
 ```
 
 compare virome to bacteriome
+
 ```{r}
 bac_next_bray_dt$kingdom <- "Bacteria"
 vir_next_bray_dt$kingdom <- "Virus"
@@ -441,8 +453,8 @@ stat.test_kingdom <- apply(stat.test_kingdom,2,as.character)
 write.csv(stat.test_kingdom, file=sprintf("%s/intermediate_files/wilcoxon_bac_vs_vir_bray.csv", find_rstudio_root_file()))
 ```
 
+load extra metadata, check imbalanced metadata for T1D groups
 
-load extra metadata
 ```{r}
 extra_meta_dt <- fread(
   "/Users/u241374/mike_tisza/teddy_virome/data_files2/MP142_FLAT_V2.csv", 
@@ -456,12 +468,14 @@ full_meta %>%
   summarise(n = n()) %>%
   mutate(freq = n / sum(n))
 
-chisq.test(full_meta$T1D, full_meta$deliv_method)
+chisq.test(full_meta$T1D, full_meta$sex)
 
 ```
 
+sex has imbalance
 
-test a few other things
+check breakdown by sex, virome
+
 ```{r}
 
 
@@ -494,7 +508,8 @@ ggsave(file = sprintf("%s/charts/virome_T1D_and_sex_bray_curtis.pdf", find_rstud
                  width = 4.5, height = 3)
 ```
 
-test a few other things
+check breakdown by sex, bacteriome
+
 ```{r}
 
 
@@ -527,4 +542,59 @@ ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_sex_bray_curtis.pdf", find_r
                  width = 4.5, height = 3)
 ```
 
+plot bray-curtis distance of samples across day of life bins, virome
+```{r}
+## this functions rounds a number up to the nearest 100
+round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
+
+vir_next_bray_dt %>%
+  mutate(rounded_DOL =  round_any(age_days, 100)) %>%
+  filter(rounded_DOL <= 1400) %>%
+  ggplot(aes(T1D, bray_curtis)) +
+  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
+  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
+  theme_bw() +
+  ylim(c(0,1.2)) +
+  facet_wrap(~factor(rounded_DOL), nrow = 1) +
+  stat_compare_means(label = "p.signif",
+                     method = "wilcox",
+                     comparisons = 
+                       list(c("Yes", "No"))) +
+  theme(legend.position = "bottom", 
+        axis.text.x = element_blank()) +
+  labs(x = "day of life (rounded)", 
+       y = "Bray-Curtis Distance\nto Follow-up Sample",
+       title="virus SGBs")  
+
+ggsave(file = sprintf("%s/charts/virome_T1D_and_dayoflife_bray_curtis.pdf", find_rstudio_root_file()), 
+                 width = 6, height = 3.5)     
+```
+
+plot bray-curtis distance of samples across day of life bins, bacteriome
+```{r}
+## this functions rounds a number up to the nearest 100
+round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
+
+bac_next_bray_dt %>%
+  mutate(rounded_DOL =  round_any(age_days, 100)) %>%
+  filter(rounded_DOL <= 1400) %>%
+  ggplot(aes(T1D, bray_curtis)) +
+  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
+  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
+  theme_bw() +
+  ylim(c(0,1.2)) +
+  facet_wrap(~factor(rounded_DOL), nrow = 1) +
+  stat_compare_means(label = "p.signif",
+                     method = "wilcox",
+                     comparisons = 
+                       list(c("Yes", "No"))) +
+  theme(legend.position = "bottom", 
+        axis.text.x = element_blank()) +
+  labs(x = "day of life (rounded)", 
+       y = "Bray-Curtis Distance\nto Follow-up Sample",
+       title="bacteria SGBs")  
+
+ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_dayoflife_bray_curtis.pdf", find_rstudio_root_file()), 
+                 width = 6, height = 3.5)               
+```
 
