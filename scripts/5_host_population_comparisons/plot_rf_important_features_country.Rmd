@@ -42,11 +42,8 @@ long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
                            grepl("k__Vir", lineage) ~ "Virus",
                            grepl("k__Ar", lineage) ~ "Archea",
                            grepl("k__Euk", lineage) ~ "Eukaryota",
-                           TRUE ~ "other"),
-         feature = case_when(kingdom == "Virus" ~ genus,
-                             kingdom == "Bacteria" ~ species,
-                             TRUE ~ "other")) %>%
-  subset(select = c("rel_abundance", "sampleID", "species", "genus", "kingdom", "feature"))
+                           TRUE ~ "other")) %>%
+  subset(select = c("rel_abundance", "sampleID", "species", "genus", "kingdom"))
 
 
 meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
@@ -71,18 +68,18 @@ SWE_imp_dt <- fread(sprintf("%s", swe_important), sep = "\t", header = T) %>%
   head(n = 12) %>%
   select(-avg_importance)
 
-SWE_ab_dt <- merge(long_dt, SWE_imp_dt, by.x = "feature", by.y = "V1") 
+SWE_ab_dt <- merge(long_dt, SWE_imp_dt, by = "species") 
 
 SWE_ab_meta_dt <- merge(SWE_ab_dt, meta_dt, by.x = "sampleID", by.y = "sample") %>%
   mutate(rounded_DOL =  round_any(age_days, 100)) %>%
   filter(rounded_DOL <= 1400) %>%
-  select(c(sampleID, feature, rel_abundance, rounded_DOL, Country)) %>%
-  group_by(feature, rounded_DOL, Country) %>%
+  select(c(sampleID, species, rel_abundance, rounded_DOL, Country)) %>%
+  group_by(species, rounded_DOL, Country) %>%
   ## relative abundance to itself over all samples from each time bracket
   summarize(avg_rel_abund = mean(rel_abundance)) %>%
   ungroup() %>%
-  ## adding 0s for rounded_DOL where feature was never detected
-  complete(feature, rounded_DOL, Country) %>%
+  ## adding 0s for rounded_DOL where species was never detected
+  complete(species, rounded_DOL, Country) %>%
   replace(is.na(.), 0)
 
 ```
@@ -90,13 +87,18 @@ SWE_ab_meta_dt <- merge(SWE_ab_dt, meta_dt, by.x = "sampleID", by.y = "sample") 
 plot Sweden top 12 important features longitudinally
 ```{r}
 SWE_ab_meta_dt %>%
+  mutate(species = gsub("s__", "", species)) %>%
+  mutate(species = gsub("\\|t__", " ", species)) %>%
+  mutate(species = gsub("_", " ", species)) %>%
   ggplot(aes(x = rounded_DOL, y = avg_rel_abund, color = Country)) +
   geom_line() +
-  facet_wrap(vars(feature), scales = "free_y") +
+  facet_wrap(vars(species), scales = "free_y", 
+             labeller = label_wrap_gen()) +
   theme_cowplot() + 
-  labs(y="average Abundance", x="day of life", title="SWE important features") +
+  labs(y="average abundance", x="day of life", title="SWE important features") +
   scale_color_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3")) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), strip.text.x = element_text(size=4))
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
+        strip.text.x = element_text(size=6))
 
 ggsave(file = sprintf("%s/charts/all_SGBs_SWE_rf_top12_features.pdf", find_rstudio_root_file()), 
                  width = 8, height = 4)
@@ -108,18 +110,18 @@ FIN_imp_dt <- fread(sprintf("%s", fin_important), sep = "\t", header = T) %>%
   head(n = 12) %>%
   select(-avg_importance)
 
-FIN_ab_dt <- merge(long_dt, FIN_imp_dt, by.x = "feature", by.y = "V1") 
+FIN_ab_dt <- merge(long_dt, FIN_imp_dt, by = "species") 
 
 FIN_ab_meta_dt <- merge(FIN_ab_dt, meta_dt, by.x = "sampleID", by.y = "sample") %>%
   mutate(rounded_DOL =  round_any(age_days, 100)) %>%
   filter(rounded_DOL <= 1400) %>%
-  select(c(sampleID, feature, rel_abundance, rounded_DOL, Country)) %>%
-  group_by(feature, rounded_DOL, Country) %>%
+  select(c(sampleID, species, rel_abundance, rounded_DOL, Country)) %>%
+  group_by(species, rounded_DOL, Country) %>%
   ## relative abundance to itself over all samples from each time bracket
   summarize(avg_rel_abund = mean(rel_abundance)) %>%
   ungroup() %>%
-  ## adding 0s for rounded_DOL where feature was never detected
-  complete(feature, rounded_DOL, Country) %>%
+  ## adding 0s for rounded_DOL where species was never detected
+  complete(species, rounded_DOL, Country) %>%
   replace(is.na(.), 0)
 
 ```
@@ -127,13 +129,18 @@ FIN_ab_meta_dt <- merge(FIN_ab_dt, meta_dt, by.x = "sampleID", by.y = "sample") 
 plot Finland top 12 important features longitudinally
 ```{r}
 FIN_ab_meta_dt %>%
+  mutate(species = gsub("s__", "", species)) %>%
+  mutate(species = gsub("\\|t__", " ", species)) %>%
+  mutate(species = gsub("_", " ", species)) %>%
   ggplot(aes(x = rounded_DOL, y = avg_rel_abund, color = Country)) +
   geom_line() +
-  facet_wrap(vars(feature), scales = "free_y") +
+  facet_wrap(vars(species), scales = "free_y", 
+             labeller = label_wrap_gen()) +
   theme_cowplot() + 
-  labs(y="average Abundance", x="day of life", title="FIN important features") +
+  labs(y="average abundance", x="day of life", title="FIN important features") +
   scale_color_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3")) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), strip.text.x = element_text(size=4))
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
+        strip.text.x = element_text(size=6))
 
 ggsave(file = sprintf("%s/charts/all_SGBs_FIN_rf_top12_features.pdf", find_rstudio_root_file()), 
                  width = 8, height = 4)
@@ -143,21 +150,20 @@ get Germany top 12 important features
 ```{r}
 GER_imp_dt <- fread(sprintf("%s", ger_important), sep = "\t", header = T) %>%
   head(n = 12) %>%
-  arrange(desc(avg_importance)) %>%
   select(-avg_importance)
 
-GER_ab_dt <- merge(long_dt, GER_imp_dt, by.x = "feature", by.y = "V1") 
+GER_ab_dt <- merge(long_dt, GER_imp_dt, by = "species") 
 
 GER_ab_meta_dt <- merge(GER_ab_dt, meta_dt, by.x = "sampleID", by.y = "sample") %>%
   mutate(rounded_DOL =  round_any(age_days, 100)) %>%
   filter(rounded_DOL <= 1400) %>%
-  select(c(sampleID, feature, rel_abundance, rounded_DOL, Country)) %>%
-  group_by(feature, rounded_DOL, Country) %>%
+  select(c(sampleID, species, rel_abundance, rounded_DOL, Country)) %>%
+  group_by(species, rounded_DOL, Country) %>%
   ## relative abundance to itself over all samples from each time bracket
   summarize(avg_rel_abund = mean(rel_abundance)) %>%
   ungroup() %>%
-  ## adding 0s for rounded_DOL where feature was never detected
-  complete(feature, rounded_DOL, Country) %>%
+  ## adding 0s for rounded_DOL where species was never detected
+  complete(species, rounded_DOL, Country) %>%
   replace(is.na(.), 0)
 
 ```
@@ -165,13 +171,18 @@ GER_ab_meta_dt <- merge(GER_ab_dt, meta_dt, by.x = "sampleID", by.y = "sample") 
 plot Germany top 12 important features longitudinally
 ```{r}
 GER_ab_meta_dt %>%
+  mutate(species = gsub("s__", "", species)) %>%
+  mutate(species = gsub("\\|t__", " ", species)) %>%
+  mutate(species = gsub("_", " ", species)) %>%
   ggplot(aes(x = rounded_DOL, y = avg_rel_abund, color = Country)) +
   geom_line() +
-  facet_wrap(vars(feature), scales = "free_y") +
+  facet_wrap(vars(species), scales = "free_y", 
+             labeller = label_wrap_gen()) +
   theme_cowplot() + 
-  labs(y="average Abundance", x="day of life", title="GER important features") +
+  labs(y="average abundance", x="day of life", title="GER important features") +
   scale_color_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3")) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), strip.text.x = element_text(size=4))
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
+        strip.text.x = element_text(size=6))
 
 ggsave(file = sprintf("%s/charts/all_SGBs_GER_rf_top12_features.pdf", find_rstudio_root_file()), 
                  width = 8, height = 4)
@@ -179,23 +190,22 @@ ggsave(file = sprintf("%s/charts/all_SGBs_GER_rf_top12_features.pdf", find_rstud
 
 get USA top 12 important features
 ```{r}
-USA_imp_dt <- fread(sprintf("%s", ger_important), sep = "\t", header = T) %>%
+USA_imp_dt <- fread(sprintf("%s", usa_important), sep = "\t", header = T) %>%
   head(n = 12) %>%
-  arrange(desc(avg_importance)) %>%
   select(-avg_importance)
 
-USA_ab_dt <- merge(long_dt, USA_imp_dt, by.x = "feature", by.y = "V1") 
+USA_ab_dt <- merge(long_dt, USA_imp_dt, by = "species") 
 
 USA_ab_meta_dt <- merge(USA_ab_dt, meta_dt, by.x = "sampleID", by.y = "sample") %>%
   mutate(rounded_DOL =  round_any(age_days, 100)) %>%
   filter(rounded_DOL <= 1400) %>%
-  select(c(sampleID, feature, rel_abundance, rounded_DOL, Country)) %>%
-  group_by(feature, rounded_DOL, Country) %>%
+  select(c(sampleID, species, rel_abundance, rounded_DOL, Country)) %>%
+  group_by(species, rounded_DOL, Country) %>%
   ## relative abundance to itself over all samples from each time bracket
   summarize(avg_rel_abund = mean(rel_abundance)) %>%
   ungroup() %>%
-  ## adding 0s for rounded_DOL where feature was never detected
-  complete(feature, rounded_DOL, Country) %>%
+  ## adding 0s for rounded_DOL where species was never detected
+  complete(species, rounded_DOL, Country) %>%
   replace(is.na(.), 0)
 
 ```
@@ -203,13 +213,18 @@ USA_ab_meta_dt <- merge(USA_ab_dt, meta_dt, by.x = "sampleID", by.y = "sample") 
 plot USA top 12 important features longitudinally
 ```{r}
 USA_ab_meta_dt %>%
+  mutate(species = gsub("s__", "", species)) %>%
+  mutate(species = gsub("\\|t__", " ", species)) %>%
+  mutate(species = gsub("_", " ", species)) %>%
   ggplot(aes(x = rounded_DOL, y = avg_rel_abund, color = Country)) +
   geom_line() +
-  facet_wrap(vars(feature), scales = "free_y") +
+  facet_wrap(vars(species), scales = "free_y", 
+             labeller = label_wrap_gen()) +
   theme_cowplot() + 
-  labs(y="average Abundance", x="day of life", title="GER important features") +
+  labs(y="average abundance", x="day of life", title="USA important features") +
   scale_color_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3")) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), strip.text.x = element_text(size=4))
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
+        strip.text.x = element_text(size=6))
 
 ggsave(file = sprintf("%s/charts/all_SGBs_USA_rf_top12_features.pdf", find_rstudio_root_file()), 
                  width = 8, height = 4)
