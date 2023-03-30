@@ -1,0 +1,104 @@
+---
+title: "Calculate and plot F1 scores for marker gene pipeline benchmark"
+output: html_notebook
+---
+
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+```
+
+set paths and filenames
+```{r}
+### files
+benchmark_table <- sprintf(
+  "%s/data/marker_gene_vir_bac_specificity_sensitivity_tests1.csv", 
+  find_rstudio_root_file())
+```
+
+#calculate F1-scores
+Precision = True Positive / (True Positive + False Positive)
+Recall = True Positive / (True Positive + False Negative)
+F1 Score = 2 * (Precision * Recall) / (Precision + Recall)
+
+```{r}
+benchmark_dt <- fread(benchmark_table, sep = ",", header = T)
+
+F1_dt <- benchmark_dt %>%
+  mutate(precision = `true positive` /(`true positive` + `false positive`),
+         recall = `true positive` /(`true positive` + `false negative`),
+         F1 = 2*((precision*recall)/(precision+recall)))
+```
+
+plot F1 scores
+```{r}
+avg_F1_dt <- F1_dt %>%
+  replace(is.na(.), 0) %>%
+  group_by(kingdom, coverage) %>%
+  summarize(F1 = mean(F1))
+
+F1p <- F1_dt %>%
+  replace(is.na(.), 0) %>%
+  ggplot() +
+  geom_point(aes(x=coverage, y=F1, color=kingdom), size = 2.5, alpha=0.9) +
+  geom_line(data = avg_F1_dt, aes(x=coverage, y=F1, color=kingdom), size = 1.3, alpha =0.5) +
+  scale_color_manual(values=c("#F2AD00", "#5BBCD6")) +
+  theme_bw() +
+  labs(x= "simulated average genome coverage", y = "F1 Score", 
+       title="SGB Detection Benchmark\nfor Scrounging Around")
+
+F1p
+
+ggsave(F1p, file = sprintf("%s/charts/F1_score_mapping_simulated_reads1.pdf", 
+  find_rstudio_root_file()), width = 4, height = 3)
+```
+
+plot true positives and false positives
+```{r}
+avg_true_false_dt <- F1_dt %>%
+  replace(is.na(.), 0) %>%
+  group_by(kingdom, coverage) %>%
+  summarize(`true positive` = mean(`true positive`),
+            `false positive` = mean(`false positive`))
+
+truep <- avg_true_false_dt %>%
+  ggplot(aes(x=factor(coverage), y=`true positive`, fill=kingdom)) +
+  geom_col(, position = "dodge") +
+  geom_hline(yintercept = 68) +
+  scale_fill_manual(values=c("#F2AD00", "#5BBCD6")) +
+  theme_bw() +
+  labs(x= "simulated average genome coverage", y = "# true positives")
+
+truep
+
+ggsave(truep, file = sprintf("%s/charts/true_positive_mapping_simulated_reads1.pdf", 
+  find_rstudio_root_file()), width = 4, height = 3)
+
+falsep <- avg_true_false_dt %>%
+  ggplot(aes(x=factor(coverage), y=`false positive`, fill=kingdom)) +
+  geom_col(, position = "dodge") +
+  scale_fill_manual(values=c("#F2AD00", "#5BBCD6")) +
+  theme_bw() +
+  labs(x= "simulated average genome coverage", y = "# false positives")
+
+falsep
+
+ggsave(falsep, file = sprintf("%s/charts/false_positive_mapping_simulated_reads1.pdf", 
+  find_rstudio_root_file()), width = 4, height = 3)
+```
+
+
+
+
+
+
+
+
+
+
