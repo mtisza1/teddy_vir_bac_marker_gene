@@ -76,9 +76,11 @@ prev_ab_meta_dt <- merge(prev_ab_dt, meta_dt, by.x = "sampleID", by.y = "sample"
 ```
 
 ```{r}
-#prev_ab_meta_dt %>%
-#   group_by(species) %>%
-#  summarize(sum(self_rel_abund))
+
+prev_ab_dt %>% 
+  group_by(kingdom) %>%
+  summarize(number = n_distinct(species))
+
 ```
 
 
