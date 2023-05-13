@@ -543,6 +543,7 @@ ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_sex_bray_curtis.pdf", find_r
 ```
 
 plot bray-curtis distance of samples across day of life bins, virome
+
 ```{r}
 ## this functions rounds a number up to the nearest 100
 round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
@@ -571,6 +572,7 @@ ggsave(file = sprintf("%s/charts/virome_T1D_and_dayoflife_bray_curtis.pdf", find
 ```
 
 plot bray-curtis distance of samples across day of life bins, bacteriome
+
 ```{r}
 ## this functions rounds a number up to the nearest 100
 round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
@@ -597,4 +599,87 @@ bac_next_bray_dt %>%
 ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_dayoflife_bray_curtis.pdf", find_rstudio_root_file()), 
                  width = 6, height = 3.5)               
 ```
+
+```{r}
+## this functions rounds a number up to the nearest 100
+round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
+
+bac_next_bray_dt %>%
+  mutate(rounded_DOL =  round_any(age_days, 100)) %>%
+  filter(rounded_DOL <= 1400,
+         days_apart <=100) %>%
+  ggplot(aes(T1D, days_apart)) +
+  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
+  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
+  theme_bw() +
+  ylim(c(0,120)) +
+  facet_wrap(~factor(rounded_DOL), nrow = 1) +
+  stat_compare_means(label = "p.signif",
+                     method = "wilcox",
+                     comparisons = 
+                       list(c("Yes", "No"))) +
+  theme(legend.position = "bottom", 
+        axis.text.x = element_blank()) +
+  labs(x = "day of life (rounded)", 
+       y = "Days Apart\nto Follow-up Sample",
+       title="bacteria SGBs")  
+
+           
+```
+
+compare \# samples and rounded DOL by T1D status
+
+```{r}
+meta_dt %>%
+  group_by(mask_id, T1D) %>%
+  summarize(n_samples = n()) %>%
+  ggplot(aes(x = T1D, y = n_samples, fill = T1D)) +
+  geom_boxplot() +
+  stat_compare_means(label = "p.signif",
+                     method = "wilcox",
+                     comparisons = 
+                       list(c("Yes", "No")))
+  
+  
+```
+
+```{r}
+meta_dt %>%
+  mutate(rounded_DOL =  round_any(age_days, 100)) %>%
+  filter(rounded_DOL <= 1400) %>%
+  group_by(rounded_DOL, T1D) %>%
+  summarize(n_samples = n()) %>%
+  ungroup() %>%
+  pivot_wider(names_from = T1D, 
+            values_from = n_samples, 
+            values_fill = 0) %>%
+  mutate(ratio_No_Yes = No/Yes) %>%
+  ggplot(aes(x = rounded_DOL, y = ratio_No_Yes)) +
+  geom_point() +
+  geom_line()
+
+  
+  
+```
+
+```{r}
+meta_dt %>%
+  ggplot(aes(x = T1D, y = age_days)) +
+  geom_violin()
+
+meta_dt %>%
+  group_by(mask_id, T1D) %>%
+  arrange(age_days) %>%
+  summarize(firstd = first(age_days),
+            lastd = last(age_days),
+            avg_age = mean(age_days)) %>%
+  mutate(span = lastd - firstd) %>%
+  ggplot(aes(x = T1D, y = avg_age)) +
+  geom_boxplot()
+```
+
+
+
+
+
 
