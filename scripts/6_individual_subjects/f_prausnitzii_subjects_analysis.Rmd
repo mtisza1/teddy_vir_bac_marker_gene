@@ -16,6 +16,9 @@ library(ggpubr)
 library(rstatix)
 library(cowplot)
 library(wesanderson)
+#library(BiocManager)
+#library(ComplexHeatmap)
+#library(ggridges)
 ```
 
 
@@ -135,6 +138,97 @@ ggsave(file = "/Users/michaeltisza/mike_tisza/sandbox/phage_bacteria_specific_su
 
 ```
 
+complex heatmap
+```{r}
+bac_fp_sub248418 <- sub248418_dt %>%
+  select(lineage, species, age_days, sampleID, rel_abundance) %>%
+  complete(species, age_days) %>%
+  filter(grepl("g__Faecalibacterium", lineage)) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days),
+         species = gsub("_", " ",species),
+         species = gsub("\\|t", "",species)) %>%
+  ungroup()
+
+bac_fp_sub248418$kingdom <- "Bacteria"
+
+phage_fp_sub248418 <- merge(sub248418_dt, iphop_tax_dt, by = "species") %>%
+  filter(host_genus == "g__Faecalibacterium") %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days)) %>%
+  complete(age_days) %>%
+  select(lineage, species, age_days, sampleID, rel_abundance, avg_age) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  ungroup()
+
+phage_fp_sub248418$kingdom <- "Virus"
+
+sub248418_fp_all_dt <- rbind(bac_fp_sub248418, phage_fp_sub248418)
+
+```
+
+
+```{r}
+sub248418_fp_all_dt %>%
+  ggplot(aes(x = factor(age_days), y = reorder(species, avg_age), 
+             fill = rel_abundance)) +
+  geom_tile() +
+  scale_fill_gradient(low = "cadetblue", high = "black") +
+  #facet_wrap(vars(kingdom), ncol = 1, scales = "free_y") +
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  theme(strip.text.y.right = element_text(angle = 0),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+tempp <- sub248418_fp_all_dt %>%
+  mutate(species = gsub("Faecalibacterium", "F", species)) %>%
+  ggplot(aes(x = factor(age_days), y = reorder(species, desc(avg_age)), 
+             color = kingdom, size = rel_abundance)) +
+  geom_point(alpha = 0.8) +
+  scale_color_manual(values = c("orangered", "cadetblue")) +
+  scale_size(name = "rel.\nabundance") +  
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "SGB", x = "day of life") +
+  theme(strip.text.y.right = element_text(angle = 0),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "left")
+
+detectp <- sub248418_fp_all_dt %>%
+  group_by(species, kingdom, avg_age) %>%
+  summarize(detected = n()) %>%
+  ggplot(aes(x = detected, y = reorder(species, desc(avg_age)))) +
+  geom_col(color = "grey10") +
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "", x = "# times\ndetected") +
+  theme(strip.text.y.right = element_blank(), 
+        strip.background = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.text.y = element_blank())
+
+combp <- plot_grid(tempp, detectp, align = "h", axis = "b", rel_widths = c(20, 3))
+
+combp
+
+ggsave(combp, file = "/Users/michaeltisza/mike_tisza/sandbox/phage_bacteria_specific_subjects/sub248418_faecali_bac_phage2.pdf", width = 8, height = 5)
+
+```
+
+
+```{r}
+sub248418_fp_all_dt %>%
+  ggplot(aes(x = age_days, y = reorder(species, avg_age), 
+             fill = kingdom)) +
+  geom_col() +
+  geom_line() +
+  facet_grid(vars(kingdom, species), scales = "free_y", space="free",
+             labeller = label_wrap_gen(width = 13)) +
+  theme_bw() +
+  theme(strip.text.y.right = element_text(angle = 0),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
 
 subject 202376
 ```{r}
@@ -375,3 +469,402 @@ merge(sub202376_dt, iphop_tax_dt, by = "species") %>%
 ggsave(file = "/Users/michaeltisza/mike_tisza/sandbox/phage_bacteria_specific_subjects/sub202376_Roseburia_phage1.pdf", width = 8, height = 9.5)
 
 ```
+
+202376 tilemap
+```{r}
+bac_fp_sub202376 <- sub202376_dt %>%
+  select(lineage, species, age_days, sampleID, rel_abundance) %>%
+  complete(species, age_days) %>%
+  filter(grepl("g__Faecalibacterium", lineage)) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days),
+         species = gsub("_", " ",species),
+         species = gsub("\\|t", "",species)) %>%
+  ungroup()
+
+bac_fp_sub202376$kingdom <- "Bacteria"
+
+phage_fp_sub202376 <- merge(sub202376_dt, iphop_tax_dt, by = "species") %>%
+  filter(host_genus == "g__Faecalibacterium") %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days)) %>%
+  complete(age_days) %>%
+  select(lineage, species, age_days, sampleID, rel_abundance, avg_age) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  ungroup()
+
+phage_fp_sub202376$kingdom <- "Virus"
+
+sub202376_fp_all_dt <- rbind(bac_fp_sub202376, phage_fp_sub202376)
+
+```
+
+```{r}
+tempp <- sub202376_fp_all_dt %>%
+  mutate(species = gsub("Faecalibacterium", "F", species)) %>%
+  ggplot(aes(x = factor(age_days), y = reorder(species, desc(avg_age)), 
+             color = kingdom, size = rel_abundance)) +
+  geom_point(alpha = 0.8) +
+  scale_color_manual(values = c("orangered", "cadetblue")) +
+  scale_size(name = "rel.\nabundance") +  
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "SGB", x = "day of life") +
+  theme(strip.text.y.right = element_text(angle = 0),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "left")
+
+detectp <- sub202376_fp_all_dt %>%
+  group_by(species, kingdom, avg_age) %>%
+  summarize(detected = n()) %>%
+  ggplot(aes(x = detected, y = reorder(species, desc(avg_age)))) +
+  geom_col() +
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "", x = "# times\ndetected") +
+  theme(strip.text.y.right = element_blank(), 
+        strip.background = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.text.y = element_blank())
+
+combp <- plot_grid(tempp, detectp, align = "h", axis = "b", rel_widths = c(20, 3))
+
+combp
+```
+
+
+check most prevalent bacteria with few other SGBs in genus
+```{r}
+sub202376_dt %>% 
+  filter(kingdom == "Bacteria") %>%
+  mutate(genus = gsub("\\|s__.*", "", lineage),
+         genus = gsub(".*\\|g__", "", genus)) %>%
+  group_by(species) %>%
+  mutate(detected = n()) %>%
+  ungroup() %>%
+  group_by(genus) %>%
+  mutate(distinct_g = n_distinct(species)) %>%
+  ungroup() %>%
+  distinct(genus, species, detected, distinct_g) %>%
+  arrange(distinct_g, desc(detected))
+```
+
+202376 tilemap
+```{r}
+bac_fp_sub202376 <- sub202376_dt %>%
+  select(lineage, species, age_days, sampleID, rel_abundance) %>%
+  complete(species, age_days) %>%
+  filter(grepl("g__Flavonifractor", lineage)) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days),
+         species = gsub("_", " ",species),
+         species = gsub("\\|t", "",species)) %>%
+  ungroup()
+
+bac_fp_sub202376$kingdom <- "Bacteria"
+
+phage_fp_sub202376 <- merge(sub202376_dt, iphop_tax_dt, by = "species") %>%
+  filter(host_genus == "g__Flavonifractor") %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days)) %>%
+  complete(age_days) %>%
+  select(lineage, species, age_days, sampleID, rel_abundance, avg_age) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  ungroup()
+
+phage_fp_sub202376$kingdom <- "Virus"
+
+sub202376_fp_all_dt <- rbind(bac_fp_sub202376, phage_fp_sub202376)
+
+```
+
+```{r}
+tempp <- sub202376_fp_all_dt %>%
+  mutate(species = gsub("Flavonifractor", "F", species)) %>%
+  ggplot(aes(x = factor(age_days), y = reorder(species, desc(avg_age)), 
+             color = kingdom, size = rel_abundance)) +
+  geom_point(alpha = 0.8) +
+  scale_color_manual(values = c("orangered", "cadetblue")) +
+  scale_size(name = "rel.\nabundance") +  
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "SGB", x = "day of life") +
+  theme(strip.text.y.right = element_text(angle = 0),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "left")
+
+detectp <- sub202376_fp_all_dt %>%
+  group_by(species, kingdom, avg_age) %>%
+  summarize(detected = n()) %>%
+  ggplot(aes(x = detected, y = reorder(species, desc(avg_age)))) +
+  geom_col() +
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "", x = "# times\ndetected") +
+  theme(strip.text.y.right = element_blank(), 
+        strip.background = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.text.y = element_blank())
+
+combp <- plot_grid(tempp, detectp, align = "h", axis = "b", rel_widths = c(20, 3))
+
+combp
+```
+
+202376 tilemap
+```{r}
+bac_fp_sub202376 <- sub202376_dt %>%
+  select(lineage, species, age_days, sampleID, rel_abundance) %>%
+  complete(species, age_days) %>%
+  filter(grepl("g__Escherichia", lineage)) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days),
+         species = gsub("_", " ",species),
+         species = gsub("\\|t", "",species)) %>%
+  ungroup()
+
+bac_fp_sub202376$kingdom <- "Bacteria"
+
+phage_fp_sub202376 <- merge(sub202376_dt, iphop_tax_dt, by = "species") %>%
+  filter(host_genus == "g__Escherichia") %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days)) %>%
+  complete(age_days) %>%
+  select(lineage, species, age_days, sampleID, rel_abundance, avg_age) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  ungroup()
+
+phage_fp_sub202376$kingdom <- "Virus"
+
+sub202376_fp_all_dt <- rbind(bac_fp_sub202376, phage_fp_sub202376)
+
+```
+
+```{r}
+tempp <- sub202376_fp_all_dt %>%
+  mutate(species = gsub("Escherichia", "E", species)) %>%
+  ggplot(aes(x = factor(age_days), y = reorder(species, desc(avg_age)), 
+             color = kingdom, size = rel_abundance)) +
+  geom_point(alpha = 0.8) +
+  scale_color_manual(values = c("orangered", "cadetblue")) +
+  scale_size(name = "rel.\nabundance") +  
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "SGB", x = "day of life") +
+  theme(strip.text.y.right = element_text(angle = 0),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "left")
+
+detectp <- sub202376_fp_all_dt %>%
+  group_by(species, kingdom, avg_age) %>%
+  summarize(detected = n()) %>%
+  ggplot(aes(x = detected, y = reorder(species, desc(avg_age)))) +
+  geom_col() +
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "", x = "# times\ndetected") +
+  theme(strip.text.y.right = element_blank(), 
+        strip.background = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.text.y = element_blank())
+
+combp <- plot_grid(tempp, detectp, align = "h", axis = "b", rel_widths = c(20, 3))
+
+combp
+```
+
+202376 tilemap
+```{r}
+bac_fp_sub202376 <- sub202376_dt %>%
+  select(lineage, species, age_days, sampleID, rel_abundance) %>%
+  complete(species, age_days) %>%
+  filter(grepl("g__Barnesiella", lineage)) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days),
+         species = gsub("_", " ",species),
+         species = gsub("\\|t", "",species)) %>%
+  ungroup()
+
+bac_fp_sub202376$kingdom <- "Bacteria"
+
+phage_fp_sub202376 <- merge(sub202376_dt, iphop_tax_dt, by = "species") %>%
+  filter(host_genus == "g__Barnesiella") %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days)) %>%
+  complete(age_days) %>%
+  select(lineage, species, age_days, sampleID, rel_abundance, avg_age) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  ungroup()
+
+phage_fp_sub202376$kingdom <- "Virus"
+
+sub202376_fp_all_dt <- rbind(bac_fp_sub202376, phage_fp_sub202376)
+
+```
+
+```{r}
+tempp <- sub202376_fp_all_dt %>%
+  mutate(species = gsub("Barnesiella", "B", species)) %>%
+  ggplot(aes(x = factor(age_days), y = reorder(species, desc(avg_age)), 
+             color = kingdom, size = rel_abundance)) +
+  geom_point(alpha = 0.8) +
+  scale_color_manual(values = c("orangered", "cadetblue")) +
+  scale_size(name = "rel.\nabundance") +  
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "SGB", x = "day of life") +
+  theme(strip.text.y.right = element_text(angle = 0),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "left")
+
+detectp <- sub202376_fp_all_dt %>%
+  group_by(species, kingdom, avg_age) %>%
+  summarize(detected = n()) %>%
+  ggplot(aes(x = detected, y = reorder(species, desc(avg_age)))) +
+  geom_col() +
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "", x = "# times\ndetected") +
+  theme(strip.text.y.right = element_blank(), 
+        strip.background = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.text.y = element_blank())
+
+combp <- plot_grid(tempp, detectp, align = "h", axis = "b", rel_widths = c(20, 3))
+
+combp
+```
+
+Parabacteroides
+202376 tilemap
+```{r}
+bac_fp_sub202376 <- sub202376_dt %>%
+  select(lineage, species, age_days, sampleID, rel_abundance) %>%
+  complete(species, age_days) %>%
+  filter(grepl("g__Parabacteroides", lineage)) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days),
+         species = gsub("_", " ",species),
+         species = gsub("\\|t", "",species)) %>%
+  ungroup()
+
+bac_fp_sub202376$kingdom <- "Bacteria"
+
+phage_fp_sub202376 <- merge(sub202376_dt, iphop_tax_dt, by = "species") %>%
+  filter(host_genus == "g__Parabacteroides") %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days)) %>%
+  complete(age_days) %>%
+  select(lineage, species, age_days, sampleID, rel_abundance, avg_age) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  ungroup()
+
+phage_fp_sub202376$kingdom <- "Virus"
+
+sub202376_fp_all_dt <- rbind(bac_fp_sub202376, phage_fp_sub202376)
+
+```
+
+```{r}
+tempp <- sub202376_fp_all_dt %>%
+  mutate(species = gsub("Parabacteroides", "P", species)) %>%
+  ggplot(aes(x = factor(age_days), y = reorder(species, desc(avg_age)), 
+             color = kingdom, size = rel_abundance)) +
+  geom_point(alpha = 0.8) +
+  scale_color_manual(values = c("orangered", "cadetblue")) +
+  scale_size(name = "rel.\nabundance") +  
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "SGB", x = "day of life") +
+  theme(strip.text.y.right = element_text(angle = 0),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "left")
+
+detectp <- sub202376_fp_all_dt %>%
+  group_by(species, kingdom, avg_age) %>%
+  summarize(detected = n()) %>%
+  ggplot(aes(x = detected, y = reorder(species, desc(avg_age)))) +
+  geom_col() +
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "", x = "# times\ndetected") +
+  theme(strip.text.y.right = element_blank(), 
+        strip.background = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.text.y = element_blank())
+
+combp <- plot_grid(tempp, detectp, align = "h", axis = "b", rel_widths = c(20, 3))
+
+combp
+```
+
+
+Bacteroides
+202376 tilemap
+```{r}
+bac_fp_sub202376 <- sub202376_dt %>%
+  select(lineage, species, age_days, sampleID, rel_abundance) %>%
+  complete(species, age_days) %>%
+  filter(grepl("g__Blautia", lineage)) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days),
+         species = gsub("_", " ",species),
+         species = gsub("\\|t", "",species)) %>%
+  ungroup()
+
+bac_fp_sub202376$kingdom <- "Bacteria"
+
+phage_fp_sub202376 <- merge(sub202376_dt, iphop_tax_dt, by = "species") %>%
+  filter(host_genus == "g__Blautia") %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days)) %>%
+  complete(age_days) %>%
+  select(lineage, species, age_days, sampleID, rel_abundance, avg_age) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  ungroup()
+
+phage_fp_sub202376$kingdom <- "Virus"
+
+sub202376_fp_all_dt <- rbind(bac_fp_sub202376, phage_fp_sub202376)
+
+```
+
+```{r}
+tempp <- sub202376_fp_all_dt %>%
+  mutate(species = gsub("Veillonella", "V", species)) %>%
+  ggplot(aes(x = factor(age_days), y = reorder(species, desc(avg_age)), 
+             color = kingdom, size = rel_abundance)) +
+  geom_point(alpha = 0.8) +
+  scale_color_manual(values = c("orangered", "cadetblue")) +
+  scale_size(name = "rel.\nabundance") +  
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "SGB", x = "day of life") +
+  theme(strip.text.y.right = element_text(angle = 0),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "left")
+
+detectp <- sub202376_fp_all_dt %>%
+  group_by(species, kingdom, avg_age) %>%
+  summarize(detected = n()) %>%
+  ggplot(aes(x = detected, y = reorder(species, desc(avg_age)))) +
+  geom_col() +
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "", x = "# times\ndetected") +
+  theme(strip.text.y.right = element_blank(), 
+        strip.background = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.text.y = element_blank())
+
+combp <- plot_grid(tempp, detectp, align = "h", axis = "b", rel_widths = c(20, 3))
+
+combp
+```
+

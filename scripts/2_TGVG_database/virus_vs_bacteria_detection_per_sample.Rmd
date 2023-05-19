@@ -41,6 +41,13 @@ long_w_read_dt <- merge(long_dt, reads_dt, by = "sampleID")
 ```
 
 ```{r}
+## load metadata table
+meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+  select(-V1)
+meta_dt$sample <- as.character(meta_dt$sample)
+```
+
+```{r}
 vir_vs_bacp <- long_w_read_dt %>%
   group_by(sampleID, kingdom) %>%
   filter(kingdom != "Eukaryota",
@@ -84,7 +91,8 @@ agep <- merge_dt %>%
             add = "reg.line", add.params = list(color = "grey30")) +
   theme_bw() +
   scale_color_gradient2(low = "yellow", mid = "purple", 
-                        high = "grey10", midpoint = 1000) +
+                        high = "grey10", midpoint = 1000, 
+                        name ="day of life") +
   stat_cor(label.x = 0, label.y = 150) +
   stat_regline_equation(label.x = 0, label.y = 130) +
   labs(x = "# of Detected Bacteria SGBs", y = "# of Detected Virus SGBs")
@@ -113,8 +121,43 @@ ggsave(readp,
                  width = 5, height = 3.5)
 ```
 
+ratio of virus SGB:bacteria SGB vs reads
+```{r}
+ratiop <- merge_dt %>%
+  mutate(ratio = n_Virus / n_Bacteria) %>%
+  filter(ratio < 10) %>%
+  ggscatter(x = "Reads", y = "ratio", size = 4, alpha = 0.4, 
+            stroke = 0, color = "age_days") +
+  theme_bw() +
+  scale_color_gradient2(low = "yellow", mid = "purple", 
+                        high = "grey10", midpoint = 1000, 
+                        name ="day of life") +
+  labs(x = "# of Reads", 
+       y = "Ratio of \n(Virus SGBs:Bacteria SGBs)")
+
+ratiop
+
+ggsave(ratiop, 
+       file = sprintf("%s/charts/ratio_virus_vs_bacteria.readcolor.pdf", find_rstudio_root_file()), 
+                 width = 5, height = 3.5)
+```
 
 
+```{r}
+ratioagep <- merge_dt %>%
+  mutate(ratio = n_Virus / n_Bacteria) %>%
+  filter(ratio < 10) %>%
+  ggscatter(x = "age_days", y = "ratio", size = 4, alpha = 0.4, 
+            stroke = 0, color = "age_days") +
+  theme_bw() +
+  scale_color_gradient2(low = "yellow", mid = "purple", 
+                        high = "grey10", midpoint = 1000, 
+                        name ="day of life") +
+  labs(x = "day of life", 
+       y = "Ratio of \n(Virus SGBs:Bacteria SGBs)")
+
+ratioagep
+```
 
 
 

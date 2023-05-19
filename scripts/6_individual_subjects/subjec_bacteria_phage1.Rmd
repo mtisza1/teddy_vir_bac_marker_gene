@@ -1,0 +1,173 @@
+---
+title: "simultaneous temporal profiles of bacteria and their phages"
+output: html_notebook
+---
+
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(cowplot)
+library(wesanderson)
+```
+
+set paths and filenames
+
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+iphop_table=sprintf("%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv", find_rstudio_root_file())
+taxonomy_table=sprintf("%s/data/TGVG_database_v1.1.VC_taxonomy_table.csv", find_rstudio_root_file())
+
+```
+
+load long table and metadata, merge
+
+```{r}
+long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+  select(sampleID, rel_abundance, lineage) %>%
+  mutate(sampleID = as.character(sampleID),
+         kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
+                             grepl("k__Vir", lineage) ~ "Virus",
+                             grepl("k__Ar", lineage) ~ "Archea",
+                             grepl("k__Euk", lineage) ~ "Eukaryota",
+                             TRUE ~ "other"))
+
+meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+  select(-V1) %>%
+  mutate(sample = as.character(sample)) %>%
+  group_by(mask_id) %>%
+  filter(n() > 30) %>%
+  ungroup()
+
+merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
+
+```
+
+load iphop host prediction table
+```{r}
+iphop_dt <- fread(sprintf("%s", iphop_table), sep = ",", header = T, col.names = c("name", "AAI", "host_lineage", "confidence", "methods")) %>%
+  mutate(host_genus = gsub(".*g__","g__", host_lineage),
+         host_family = gsub(";g__.*","", host_lineage))
+
+tax_dt <- fread(sprintf("%s", taxonomy_table), sep = ",", header = T) %>%
+  select(c(name, Species))
+
+iphop_tax_dt <- merge(iphop_dt, tax_dt, by = "name") %>%
+  mutate(species = gsub("s__", "", Species))
+```
+
+check samples per subject
+```{r}
+merge_dt %>%
+  group_by(mask_id) %>%
+  summarize(samples = n_distinct(sampleID)) %>%
+  arrange(desc(samples))
+```
+
+
+subject  analysis
+
+get specific table for subject
+```{r}
+subject <- 885113
+sub_total_dt <- merge_dt %>%
+  filter(mask_id == subject) %>%
+  mutate(species = gsub(".*\\|s__", "", lineage))
+```
+
+check most prevalent genera
+```{r}
+sub_total_dt %>% 
+  filter(kingdom == "Bacteria") %>%
+  mutate(genus = gsub("\\|s__.*", "", lineage),
+         genus = gsub(".*\\|g__", "", genus)) %>%
+  group_by(genus) %>%
+  summarize(detected = n_distinct(sampleID)) %>%
+  arrange(desc(detected))
+```
+
+
+Plot a genus
+```{r}
+genus <- "Faecalibacterium"
+
+bac_select_sub <- sub_total_dt %>%
+  select(lineage, species, age_days, sampleID, rel_abundance) %>%
+  filter(grepl(sprintf("g__%s", genus), lineage)) %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days),
+         species = gsub("_", " ",species),
+         species = gsub("\\|t", "",species),
+         species = gsub("  ", ":",species)) %>%
+  ungroup()
+
+bac_select_sub$kingdom <- "Bacteria"
+
+phage_select_sub <- merge(sub_total_dt, iphop_tax_dt, by = "species") %>%
+  filter(host_genus == sprintf("g__%s", genus)) %>%
+  group_by(species) %>%
+  mutate(avg_age = mean(age_days)) %>%
+  complete(age_days) %>%
+  select(lineage, species, age_days, sampleID, rel_abundance, avg_age) %>%
+  mutate(rel_abundance = ifelse(is.na(rel_abundance), 0, rel_abundance)) %>%
+  ungroup()
+
+phage_select_sub$kingdom <- "Virus"
+
+sub_select_all_dt <- rbind(bac_select_sub, phage_select_sub)
+
+
+##### plotting
+
+#abbrev <- substr(genus, 1,1)
+tempp <- sub_select_all_dt %>%
+  mutate(species = gsub(sprintf("%s", genus), sprintf("%s", substr(genus, 1,1)), species)) %>%
+  ggplot(aes(x = age_days, y = reorder(species, desc(avg_age)), 
+             color = kingdom, size = rel_abundance)) +
+  geom_point(alpha = 0.8) +
+  scale_color_manual(values=c("#F2AD00", "#5BBCD6")) +
+  scale_size(name = "rel.\nabundance") +  
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  theme_bw() +
+  labs(y = "SGB", x = "day of life",
+       title = sprintf("Subject %s\n%s", subject, genus)) +
+  theme(strip.text.y.right = element_text(angle = 0, size = 7),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.text.y = element_text(size = 7),
+        title = element_text(size = 9),
+        legend.position = "left")
+
+detectp <- sub_select_all_dt %>%
+  group_by(species, kingdom, avg_age) %>%
+  summarize(detected = n()) %>%
+  ggplot(aes(x = detected, y = reorder(species, desc(avg_age)))) +
+  geom_col() +
+  facet_grid(vars(kingdom), scales = "free_y", space="free") +
+  scale_x_continuous(guide = guide_axis(check.overlap = T)) +
+  theme_bw() +
+  labs(y = "", x = "# times\ndetected",
+       title = " \n ") +
+  theme(strip.text.y.right = element_blank(), 
+        strip.background = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        axis.text.y = element_blank(),
+        title = element_text(size = 9))
+
+combp <- plot_grid(tempp, detectp, align = "h", axis = "b", 
+                   rel_widths = c(20, 3))
+
+combp 
+```
+
+save
+```{r}
+ggsave(combp, file = sprintf("%s/charts/subject_phage-bacteria/%s_%s_age_dotplot.pdf", find_rstudio_root_file(), subject, genus), width = 5, height = 5)
+```
+
+
+
