@@ -74,7 +74,7 @@ subject  analysis
 
 get specific table for subject
 ```{r}
-subject <- 885113
+subject <- 906869
 sub_total_dt <- merge_dt %>%
   filter(mask_id == subject) %>%
   mutate(species = gsub(".*\\|s__", "", lineage))
@@ -130,7 +130,7 @@ tempp <- sub_select_all_dt %>%
   ggplot(aes(x = age_days, y = reorder(species, desc(avg_age)), 
              color = kingdom, size = rel_abundance)) +
   geom_point(alpha = 0.8) +
-  scale_color_manual(values=c("#F2AD00", "#5BBCD6")) +
+  scale_color_manual(values=c("#F2AD00", "#5BBCD6"), guide = "none") +
   scale_size(name = "rel.\nabundance") +  
   facet_grid(vars(kingdom), scales = "free_y", space="free") +
   theme_bw() +
@@ -168,6 +168,7 @@ save
 ```{r}
 ggsave(combp, file = sprintf("%s/charts/subject_phage-bacteria/%s_%s_age_dotplot.pdf", find_rstudio_root_file(), subject, genus), width = 5, height = 5)
 ```
+
 
 
 
