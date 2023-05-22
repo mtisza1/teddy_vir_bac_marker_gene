@@ -159,6 +159,52 @@ ratioagep <- merge_dt %>%
 ratioagep
 ```
 
+reads vs SGB count
+```{r}
+
+vir_readp <- merge_dt %>%
+  ggscatter(x = "Reads", y = "n_Virus", size = 3, alpha = 0.4, 
+            stroke = 0, color = "#F2AD00", 
+            add = "reg.line", add.params = list(color = "grey30")) +
+  theme_bw() +
+  stat_cor(label.x = 0, label.y = 100) +
+  stat_regline_equation(label.x = 0, label.y = 80) +
+  labs(x = "# of Reads", y = "# of Detected Virus SGBs")
+
+vir_readp
+
+bac_readp <- merge_dt %>%
+  ggscatter(x = "Reads", y = "n_Bacteria", size = 3, alpha = 0.4, 
+            stroke = 0, color = "#5BBCD6", 
+            add = "reg.line", add.params = list(color = "grey30")) +
+  theme_bw() +
+  stat_cor(label.x = 0, label.y = 100) +
+  stat_regline_equation(label.x = 0, label.y = 80) +
+  labs(x = "# of Reads", y = "# of Detected Bacteria SGBs")
+
+bac_readp
+```
+
+boxplot
+```{r}
+round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
+
+merge_dt %>%
+  mutate(round_reads = round_any(Reads, 2000000)) %>%
+  filter(round_reads <= 2.6e7) %>%
+  ggplot(aes(x = factor(round_reads), y = n_Virus)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+merge_dt %>%
+  mutate(round_reads = round_any(Reads, 2000000)) %>%
+  filter(round_reads <= 2.6e7) %>%
+  ggplot(aes(x = factor(round_reads), y = n_Bacteria)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  stat_compare_means(label = "p.signif")
+```
+
 
 
 

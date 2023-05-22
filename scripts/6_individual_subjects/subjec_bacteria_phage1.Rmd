@@ -74,7 +74,7 @@ subject  analysis
 
 get specific table for subject
 ```{r}
-subject <- 906869
+subject <- 752803
 sub_total_dt <- merge_dt %>%
   filter(mask_id == subject) %>%
   mutate(species = gsub(".*\\|s__", "", lineage))
@@ -94,7 +94,7 @@ sub_total_dt %>%
 
 Plot a genus
 ```{r}
-genus <- "Faecalibacterium"
+genus <- "Gemmiger"
 
 bac_select_sub <- sub_total_dt %>%
   select(lineage, species, age_days, sampleID, rel_abundance) %>%
@@ -121,7 +121,8 @@ phage_select_sub$kingdom <- "Virus"
 
 sub_select_all_dt <- rbind(bac_select_sub, phage_select_sub)
 
-
+age_day_dt <- merge_dt %>%
+  filter(mask_id == subject) %>% distinct(age_days)
 ##### plotting
 
 #abbrev <- substr(genus, 1,1)
@@ -130,6 +131,9 @@ tempp <- sub_select_all_dt %>%
   ggplot(aes(x = age_days, y = reorder(species, desc(avg_age)), 
              color = kingdom, size = rel_abundance)) +
   geom_point(alpha = 0.8) +
+  geom_rug(data = age_day_dt, aes(x = age_days), 
+           color="grey50", alpha=1, outside = F,
+           inherit.aes = F, length = unit(0.02, "npc")) + 
   scale_color_manual(values=c("#F2AD00", "#5BBCD6"), guide = "none") +
   scale_size(name = "rel.\nabundance") +  
   facet_grid(vars(kingdom), scales = "free_y", space="free") +
@@ -141,6 +145,7 @@ tempp <- sub_select_all_dt %>%
         axis.text.y = element_text(size = 7),
         title = element_text(size = 9),
         legend.position = "left")
+#tempp
 
 detectp <- sub_select_all_dt %>%
   group_by(species, kingdom, avg_age) %>%
@@ -157,7 +162,7 @@ detectp <- sub_select_all_dt %>%
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         axis.text.y = element_blank(),
         title = element_text(size = 9))
-
+#detectp
 combp <- plot_grid(tempp, detectp, align = "h", axis = "b", 
                    rel_widths = c(20, 3))
 
