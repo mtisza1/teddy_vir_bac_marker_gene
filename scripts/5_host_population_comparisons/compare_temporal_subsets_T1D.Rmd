@@ -1,0 +1,97 @@
+---
+title: "Compare relative abundance of different temporal subset taxa for T1D vs non-T1D subjects"
+output: html_notebook
+---
+
+load packages
+
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(vegan)
+library(ggpubr)
+library(rstatix)
+library(cowplot)
+
+```
+
+set paths and filenames
+
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+subset_table=sprintf("%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv", find_rstudio_root_file())
+```
+
+load long table and metadata, merge
+
+```{r}
+long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+  select(sampleID, rel_abundance, lineage) %>%
+  mutate(sampleID = as.character(sampleID),
+         species = gsub(".*s__","s__", lineage ),
+         kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
+                             grepl("k__Vir", lineage) ~ "Virus",
+                             grepl("k__Ar", lineage) ~ "Archea",
+                             grepl("k__Euk", lineage) ~ "Eukaryota",
+                             TRUE ~ "other"))
+
+meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+  select(-V1) %>%
+  mutate(sample = as.character(sample))
+
+merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
+
+```
+
+load temporal subset dt
+```{r}
+temporal_sub_dt <- fread(sprintf("%s", subset_table), sep = "\t", header = T) %>%
+  distinct(species, assignment) %>%
+  filter(assignment != "Subset 7")
+
+prev_sub_dt <- merge(merge_dt, temporal_sub_dt, by = "species") %>%
+  group_by(sampleID, assignment) %>%
+  summarize(assign_rel_abund = sum(rel_abundance))
+
+merge_prev_sub_dt <- merge(prev_sub_dt, meta_dt, by.x = "sampleID", by.y ="sample")
+```
+
+plot relative abundance of temporal subsets accross day of life
+```{r}
+## this functions rounds a number up to the nearest 100
+round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
+
+merge_prev_sub_dt %>%
+  mutate(rounded_DOL =  round_any(age_days, 100)) %>%
+  filter(rounded_DOL <= 1400) %>%
+  ggplot(aes(T1D, assign_rel_abund)) +
+  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
+  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
+  theme_bw() +
+  ylim(c(0,1.2)) +
+  facet_grid(assignment~factor(rounded_DOL)) +
+  stat_pwc(label = "p.adj.signif",
+                     method = "wilcoxon",
+           p.adjust.method = "hochberg",
+                     comparisons = 
+                       list(c("Yes", "No"))) +
+  labs(x = "day of life (rounded)", 
+       y = "Relative Abundance of Subset")  +
+  scale_x_discrete(position = "top") +
+  theme(legend.position = "bottom", 
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+
+ggsave(file = sprintf("%s/charts/T1D_day_of_life_temporal_subsets_boxplots1.pdf", find_rstudio_root_file()),
+       width = 8, height = 6)
+```
+
+
+
+

@@ -12,6 +12,8 @@ library(tidyr)
 library(rprojroot)
 library(cowplot)
 library(wesanderson)
+library(ggalluvial)
+library(nationalparkcolors)
 ```
 
 set paths and filenames
@@ -74,7 +76,7 @@ subject  analysis
 
 get specific table for subject
 ```{r}
-subject <- 752803
+subject <- 202376
 sub_total_dt <- merge_dt %>%
   filter(mask_id == subject) %>%
   mutate(species = gsub(".*\\|s__", "", lineage))
@@ -94,7 +96,7 @@ sub_total_dt %>%
 
 Plot a genus
 ```{r}
-genus <- "Gemmiger"
+genus <- "Bacteroides"
 
 bac_select_sub <- sub_total_dt %>%
   select(lineage, species, age_days, sampleID, rel_abundance) %>%
@@ -122,7 +124,10 @@ phage_select_sub$kingdom <- "Virus"
 sub_select_all_dt <- rbind(bac_select_sub, phage_select_sub)
 
 age_day_dt <- merge_dt %>%
-  filter(mask_id == subject) %>% distinct(age_days)
+  filter(mask_id == subject) %>% distinct(age_days, sampleID)
+```
+
+```{r}
 ##### plotting
 
 #abbrev <- substr(genus, 1,1)
@@ -175,5 +180,143 @@ ggsave(combp, file = sprintf("%s/charts/subject_phage-bacteria/%s_%s_age_dotplot
 ```
 
 
+back to geom_col
+```{r}
+len_sp <- length(unique(sub_select_all_dt$species))
+pal <- park_palette("GeneralGrant")
+coul <- colorRampPalette(pal)(len_sp)
+
+avg_age_dt <- sub_select_all_dt %>% 
+  group_by(species) %>%
+  summarize(avg_age = mean(age_days))
+
+full_select <- merge(sub_select_all_dt, age_day_dt, 
+                     by = c("age_days", "sampleID"), all = T) %>%
+  complete(age_days, species, fill = list(rel_abundance = 0)) %>%
+  select(c(age_days, species, rel_abundance)) %>%
+  filter(species != "NA") %>%
+  mutate(kingdom = if_else(grepl("vOTU_", species), "Virus", "Bacteria"))
+
+full_select <- merge(full_select, avg_age_dt, by = "species")
+
+barp <- full_select %>%
+  mutate(species = gsub(sprintf("%s", genus), sprintf("%s", substr(genus, 1,1)), species)) %>%
+  ggplot(aes(x = age_days, y = rel_abundance, 
+             color = reorder(species, avg_age), 
+             fill = reorder(species, avg_age))) +
+  geom_col(color = NA) +
+  #geom_point() +
+  geom_line(size = 0.3, alpha = 0.3) +
+  geom_rug(data = age_day_dt, aes(x = age_days), 
+           color="grey50", alpha=1, outside = T,
+           inherit.aes = F, length = unit(0.05, "npc")) +
+  facet_wrap(vars(kingdom, reorder(species, avg_age)),  
+             ncol = 1, strip.position = "right",
+             scales = "free_y") +
+  labs(y = "Relative Abundance", x = "Day of Life",
+       title = sprintf("Subject %s, %s", subject, genus)) +
+  scale_color_manual(values = coul) +
+  scale_fill_manual(values = coul) +
+  theme_cowplot() +
+  theme(legend.position = "off",
+        axis.text.y = element_blank(),
+        strip.text.y.right = element_text(angle = 0, size = 7),
+        panel.spacing = unit(0.01, "lines"),
+        axis.ticks.length.y = unit(0, "cm"))
+
+#barp
+jitterp <- sub_select_all_dt %>%
+  group_by(species, kingdom, avg_age) %>%
+  summarize(detected = n(),
+            avg_ab = mean(rel_abundance)) %>%
+  ggplot(aes(x = kingdom, y = detected, color = reorder(species, avg_age), size = avg_ab)) +
+  geom_boxplot(inherit.aes = F, aes(x = kingdom, y = detected), outlier.shape = NA) +
+  geom_jitter(width = 0.05, height = 0, alpha =0.9) +
+  scale_color_manual(values = coul) +
+  labs(x = "", y = "# Times Detected",
+       title = " ") +
+  theme_cowplot() +
+  theme(legend.position = "off",
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 7))
+
+#jitterp
+
+barjit_p <- plot_grid(barp, jitterp, align = "h", axis = "b", 
+                   rel_widths = c(20, 5))
+
+barjit_p
+```
+
+save
+```{r}
+ggsave(barjit_p, file = sprintf("%s/charts/subject_phage-bacteria/%s_%s_age_barplot.pdf", find_rstudio_root_file(), subject, genus), width = 8, height = 3.2)
+```
+
+alluvial chart
+```{r}
+
+full_select <- merge(sub_select_all_dt, age_day_dt, 
+                     by = c("age_days", "sampleID"), all = T) %>%
+  complete(age_days, species, fill = list(rel_abundance = 0)) %>%
+  select(c(age_days, species, rel_abundance)) %>%
+  filter(species != "NA") %>%
+  mutate(kingdom = if_else(grepl("vOTU_", species), "Virus", "Bacteria"))
+
+len_sp <- length(unique(sub_select_all_dt$species))
+pal <- park_palette("GeneralGrant")
+coul <- colorRampPalette(pal)(len_sp)
+
+
+alluvp <- sub_select_all_dt %>%
+  mutate(species = gsub(sprintf("%s", genus), sprintf("%s", substr(genus, 1,1)), species)) %>%
+  ggplot(aes(x = age_days, y = rel_abundance, alluvium = species)) +
+  geom_alluvium(aes(fill = species, colour = species), width = 0.2,
+                alpha = .75, decreasing = NA, curve_type = "arctangent") +
+  geom_rug(data = age_day_dt, aes(x = age_days), 
+           color="grey50", alpha=1, outside = F,
+           inherit.aes = F, length = unit(0.03, "npc")) +
+  scale_color_manual(values = coul) +
+  scale_fill_manual(values = coul) +
+  scale_y_continuous(guide = guide_axis(check.overlap = T)) +
+  labs(y = "Relative Abundance", x = "Day of Life",
+       title = sprintf("Subject %s, %s", subject, genus)) +
+  facet_wrap(vars(kingdom),  
+             ncol = 1, strip.position = "right", 
+             labeller = label_wrap_gen(width = 13),
+             scales = "free_y") +
+  theme_cowplot() +
+  theme(legend.position = "left",
+        legend.key.size = unit(0.3, 'cm'),
+        legend.text = element_text(size=8))
+
+alluvp
+
+jitterp <- sub_select_all_dt %>%
+  group_by(species, kingdom, avg_age) %>%
+  summarize(detected = n(),
+            avg_ab = mean(rel_abundance)) %>%
+  ggplot(aes(x = kingdom, y = detected, color = species, size = avg_ab)) +
+  geom_boxplot(inherit.aes = F, aes(x = kingdom, y = detected), outlier.shape = NA) +
+  geom_jitter(width = 0.05, alpha =0.9) +
+  scale_color_manual(values = coul) +
+  labs(x = "", y = "# Times Detected",
+       title = " ") +
+  theme_cowplot() +
+  theme(legend.position = "off",
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+#jitterp
+
+alljit_p <- plot_grid(alluvp, jitterp, align = "h", axis = "b", 
+                   rel_widths = c(20, 5))
+
+alljit_p
+# color = reorder(species, avg_age), fill = reorder(species, avg_age)
+```
+
+save
+```{r}
+ggsave(alljit_p, file = sprintf("%s/charts/subject_phage-bacteria/%s_%s_age_alluvialplot.pdf", find_rstudio_root_file(), subject, genus), width = 8, height = 3.2)
+```
 
 

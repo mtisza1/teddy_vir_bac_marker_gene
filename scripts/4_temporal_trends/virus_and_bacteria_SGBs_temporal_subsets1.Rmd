@@ -103,6 +103,8 @@ kmlModels <- latrendBatch(kmlMethods, data = prev_ab_meta_dt, verbose = FALSE)
 kmlModels
 plotMetric(kmlModels, c("logLik", "BIC", "WMAE"))
 kmlModelp <- subset(kmlModels, nClusters == 7, drop = TRUE)
+
+
 ```
 
 Assign VCs to temporal clusters
@@ -122,6 +124,25 @@ king_gen_dt <- long_dt %>%
   select(c(species, genus, kingdom)) %>% 
   distinct()
 prev_ab_meta_dt <- merge(prev_ab_meta_dt, king_gen_dt, by = "species")
+
+```
+
+```{r}
+### only run if reloading previous assignments
+#prev_ab_meta_dt <- fread(sprintf(
+#                "%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv",
+#                find_rstudio_root_file()), sep = "\t", header = T)
+```
+
+make dt to plot average line
+```{r}
+
+subset_av_dt <- prev_ab_meta_dt %>%
+  group_by(assignment) %>%
+  filter(n_distinct(species) > 10) %>%
+  ungroup() %>%
+  group_by(assignment, rounded_DOL, kingdom) %>%
+  summarize(sub_avg_rel_abund = mean(self_rel_abund))
 ```
 
 plot longitudinal clusters, virus SGBs
@@ -129,6 +150,7 @@ plot longitudinal clusters, virus SGBs
 pal <- park_palette("Arches")
 coul <- colorRampPalette(pal)(6)
 
+  
 linesp <- prev_ab_meta_dt %>%
   filter(kingdom == "Virus") %>%
   group_by(assignment) %>%
@@ -136,7 +158,9 @@ linesp <- prev_ab_meta_dt %>%
   ungroup() %>%
   ggplot(aes(x = rounded_DOL, y = self_rel_abund)) +
   geom_line(aes(group = species), color= "grey30", alpha = 0.2) +
-  geom_smooth(aes(color = assignment), se = F) +
+  geom_line(data = subset_av_dt %>% filter(kingdom == "Virus"), 
+            aes(x = rounded_DOL, y = sub_avg_rel_abund, color = assignment),
+            size = 1.6) +
   scale_color_manual(values = coul) +
   facet_wrap(vars(assignment)) +
   coord_cartesian(ylim = c(0, 0.3)) +
@@ -178,8 +202,9 @@ linesp <- prev_ab_meta_dt %>%
   ungroup() %>%
   ggplot(aes(x = rounded_DOL, y = self_rel_abund)) +
   geom_line(aes(group = species), color= "grey30", alpha = 0.2) +
-  geom_smooth(aes(color = assignment), se = F) +
-  scale_color_manual(values = coul) +
+  geom_line(data = subset_av_dt %>% filter(kingdom == "Bacteria"), 
+            aes(x = rounded_DOL, y = sub_avg_rel_abund, color = assignment),
+            size = 1.6) +  scale_color_manual(values = coul) +
   facet_wrap(vars(assignment)) +
   coord_cartesian(ylim = c(0, 0.3)) +
   scale_x_continuous(breaks = round(seq(min(prev_ab_meta_dt$rounded_DOL), 
