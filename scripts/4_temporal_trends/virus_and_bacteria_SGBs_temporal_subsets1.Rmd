@@ -60,10 +60,10 @@ prev_ab_meta_dt <- merge(prev_ab_dt, meta_dt, by.x = "sampleID", by.y = "sample"
   mutate(rounded_DOL =  round_any(age_days, 100)) %>%
   filter(rounded_DOL <= 1400) %>%
   select(c(sampleID, species, rel_abundance, rounded_DOL)) %>%
-  #group_by(species) %>%
+  ## complete 0s for accurate abundance, uses about 6GB of memory
+  complete(nesting(sampleID, rounded_DOL), species, 
+           fill = list(rel_abundance = 0)) %>%
   ## relative abundance in terms of the VC itself
-  #mutate(self_rel_abund = rel_abundance / sum(rel_abundance)) %>%
-  #ungroup() %>%
   group_by(species, rounded_DOL) %>%
   ## relative abundance to itself over all samples from each time bracket
   summarize(avg_rel_abund = mean(rel_abundance)) %>%
@@ -74,6 +74,9 @@ prev_ab_meta_dt <- merge(prev_ab_dt, meta_dt, by.x = "sampleID", by.y = "sample"
   replace(is.na(.), 0)
   
 ```
+
+
+
 
 ```{r}
 
@@ -91,10 +94,10 @@ run latrend on prevalent SGBs
 options(latrend.id = "species", latrend.time = "rounded_DOL")
 plotTrajectories(prev_ab_meta_dt, response = "self_rel_abund")
 
-kmlMethod <- lcMethodKML(response = "self_rel_abund", nClusters = 7, nbRedrawing = 1)
+kmlMethod <- lcMethodKML(response = "self_rel_abund", nClusters = 8, nbRedrawing = 1)
 
 kmlModel <- latrend(kmlMethod, data = prev_ab_meta_dt)
-kmlMethods <- lcMethods(kmlMethod, nClusters = 1:7)
+kmlMethods <- lcMethods(kmlMethod, nClusters = 1:8)
 
 as.data.frame(kmlMethods)
 kmlMethods
@@ -102,7 +105,7 @@ kmlMethods
 kmlModels <- latrendBatch(kmlMethods, data = prev_ab_meta_dt, verbose = FALSE)
 kmlModels
 plotMetric(kmlModels, c("logLik", "BIC", "WMAE"))
-kmlModelp <- subset(kmlModels, nClusters == 7, drop = TRUE)
+kmlModelp <- subset(kmlModels, nClusters == 8, drop = TRUE)
 
 
 ```
@@ -110,26 +113,35 @@ kmlModelp <- subset(kmlModels, nClusters == 7, drop = TRUE)
 Assign VCs to temporal clusters
 
 ```{r}
-prev_ab_meta_dt$assignment <- predictAssignments(kmlModelp, newdata = prev_ab_meta_dt)
-prev_ab_meta_dt <- prev_ab_meta_dt %>% 
-  mutate(across('assignment', str_replace, 'C', 'Subset 5'))  %>% 
-  mutate(across('assignment', str_replace, 'F', 'Subset 1')) %>%
-  mutate(across('assignment', str_replace, 'D', 'Subset 3'))  %>% 
-  mutate(across('assignment', str_replace, 'E', 'Subset 2')) %>% 
-  mutate(across('assignment', str_replace, 'A', 'Subset 4')) %>%
-  mutate(across('assignment', str_replace, 'B', 'Subset 6')) %>%
-  mutate(across('assignment', str_replace, 'G', 'Subset 7'))
+
+prev_modeled_dt <- prev_ab_meta_dt
+prev_modeled_dt$assignment <- predictAssignments(kmlModelp, newdata = prev_modeled_dt)
+
+prev_modeled_dt %>%
+  group_by(assignment) %>%
+  summarize(n = n())
+
+prev_modeled_dt <- prev_modeled_dt %>% 
+  mutate(across('assignment', str_replace, 'C', 'Subset 4'))  %>% 
+  mutate(across('assignment', str_replace, 'F', 'Subset 2')) %>%
+  mutate(across('assignment', str_replace, 'D', 'Subset 7'))  %>% 
+  mutate(across('assignment', str_replace, 'E', 'Subset 8')) %>% 
+  mutate(across('assignment', str_replace, 'A', 'Subset 6')) %>%
+  mutate(across('assignment', str_replace, 'B', 'Subset 5')) %>%
+  mutate(across('assignment', str_replace, 'G', 'Subset 3')) %>%
+  mutate(across('assignment', str_replace, 'H', 'Subset 1'))
 
 king_gen_dt <- long_dt %>% 
   select(c(species, genus, kingdom)) %>% 
   distinct()
-prev_ab_meta_dt <- merge(prev_ab_meta_dt, king_gen_dt, by = "species")
+prev_modeled_dt <- merge(prev_modeled_dt, king_gen_dt, by = "species")
+
 
 ```
 
 ```{r}
 ### only run if reloading previous assignments
-#prev_ab_meta_dt <- fread(sprintf(
+#prev_modeled_dt <- fread(sprintf(
 #                "%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv",
 #                find_rstudio_root_file()), sep = "\t", header = T)
 ```
@@ -137,46 +149,44 @@ prev_ab_meta_dt <- merge(prev_ab_meta_dt, king_gen_dt, by = "species")
 make dt to plot average line
 ```{r}
 
-subset_av_dt <- prev_ab_meta_dt %>%
+subset_av_dt <- prev_modeled_dt %>%
   group_by(assignment) %>%
   filter(n_distinct(species) > 10) %>%
   ungroup() %>%
   group_by(assignment, rounded_DOL, kingdom) %>%
   summarize(sub_avg_rel_abund = mean(self_rel_abund))
+
+
 ```
 
 plot longitudinal clusters, virus SGBs
 ```{r}
 pal <- park_palette("Arches")
-coul <- colorRampPalette(pal)(6)
+coul <- colorRampPalette(pal)(8)
 
   
-linesp <- prev_ab_meta_dt %>%
+linesp <- prev_modeled_dt %>%
   filter(kingdom == "Virus") %>%
-  group_by(assignment) %>%
-  filter(n_distinct(species) > 10) %>%
-  ungroup() %>%
   ggplot(aes(x = rounded_DOL, y = self_rel_abund)) +
   geom_line(aes(group = species), color= "grey30", alpha = 0.2) +
   geom_line(data = subset_av_dt %>% filter(kingdom == "Virus"), 
             aes(x = rounded_DOL, y = sub_avg_rel_abund, color = assignment),
             size = 1.6) +
   scale_color_manual(values = coul) +
-  facet_wrap(vars(assignment)) +
-  coord_cartesian(ylim = c(0, 0.3)) +
-  scale_x_continuous(breaks = round(seq(min(prev_ab_meta_dt$rounded_DOL), 
-                                        max(prev_ab_meta_dt$rounded_DOL), by = 200),1)) +
+  facet_wrap(vars(assignment), nrow = 2) +
+  coord_cartesian(ylim = c(0, 0.35)) +
+  scale_x_continuous(breaks = round(seq(min(prev_modeled_dt$rounded_DOL), 
+                                        max(prev_modeled_dt$rounded_DOL), by = 200),1)) +
   labs(y = "Relative Abundance", x = "Day of Life") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         legend.position = "Off")
 linesp
-ggsave(linesp, file = sprintf("%s/charts/virus_species_temporal_subsets_lines1.pdf", find_rstudio_root_file()), width = 6, height = 5)
+ggsave(linesp, file = sprintf("%s/charts/virus_species_temporal_subsets_lines1.pdf", find_rstudio_root_file()), width = 6, height = 4)
 
-barsp <- prev_ab_meta_dt %>%
+barsp <- prev_modeled_dt %>%
   filter(kingdom == "Virus") %>%
   group_by(assignment) %>%
-  filter(n_distinct(species) > 10) %>%
   summarize(clust_size = n_distinct(species)) %>%
   ggplot(aes(x = assignment, y = clust_size, fill = assignment)) +
   geom_col(color = "grey20") +
@@ -193,38 +203,34 @@ ggsave(barsp, file = sprintf("%s/charts/virus_species_temporal_subsets_size1.pdf
 plot longitudinal clusters, bacteria SGBs
 ```{r}
 pal <- park_palette("Arches")
-coul <- colorRampPalette(pal)(6)
+coul <- colorRampPalette(pal)(8)
 
-linesp <- prev_ab_meta_dt %>%
+linesp <- prev_modeled_dt %>%
   filter(kingdom == "Bacteria") %>%
-  group_by(assignment) %>%
-  filter(n_distinct(species) > 10) %>%
-  ungroup() %>%
   ggplot(aes(x = rounded_DOL, y = self_rel_abund)) +
   geom_line(aes(group = species), color= "grey30", alpha = 0.2) +
   geom_line(data = subset_av_dt %>% filter(kingdom == "Bacteria"), 
             aes(x = rounded_DOL, y = sub_avg_rel_abund, color = assignment),
             size = 1.6) +  scale_color_manual(values = coul) +
-  facet_wrap(vars(assignment)) +
+  facet_wrap(vars(assignment), nrow = 2) +
   coord_cartesian(ylim = c(0, 0.3)) +
-  scale_x_continuous(breaks = round(seq(min(prev_ab_meta_dt$rounded_DOL), 
-                                        max(prev_ab_meta_dt$rounded_DOL), by = 200),1)) +
+  scale_x_continuous(breaks = round(seq(min(prev_modeled_dt$rounded_DOL), 
+                                        max(prev_modeled_dt$rounded_DOL), by = 200),1)) +
   labs(y = "Relative Abundance", x = "Day of Life") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         legend.position = "Off")
 linesp
-ggsave(linesp, file = sprintf("%s/charts/bacteria_species_temporal_subsets_lines1.pdf", find_rstudio_root_file()), width = 6, height = 5)
+ggsave(linesp, file = sprintf("%s/charts/bacteria_species_temporal_subsets_lines1.pdf", find_rstudio_root_file()), width = 6, height = 4)
 
-barsp <- prev_ab_meta_dt %>%
+barsp <- prev_modeled_dt %>%
   filter(kingdom == "Bacteria") %>%
   group_by(assignment) %>%
-  filter(n_distinct(species) > 10) %>%
   summarize(clust_size = n_distinct(species)) %>%
   ggplot(aes(x = assignment, y = clust_size, fill = assignment)) +
   geom_col(color = "grey20") +
   scale_fill_manual(values = coul) +
-  labs(y = "Virus SGBs in Subset") +
+  labs(y = "Bacteria SGBs in Subset") +
   theme_bw() +
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
 barsp
@@ -234,12 +240,12 @@ ggsave(barsp, file = sprintf("%s/charts/bacteria_species_temporal_subsets_size1.
 
 Saving model
 ```{r}
-saveRDS(kmlModelp, file = sprintf("%s/intermediate_files/prev_SGBs_7_temp_subsets_model_abundance2.rda", find_rstudio_root_file()))
+saveRDS(kmlModelp, file = sprintf("%s/intermediate_files/prev_SGBs_8_temp_subsets_model_abundance2.rda", find_rstudio_root_file()))
 ```
 
 saving table for later correlations
 ```{r}
-write.table(prev_ab_meta_dt, 
+write.table(prev_modeled_dt, 
             file = 
               sprintf(
                 "%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv",

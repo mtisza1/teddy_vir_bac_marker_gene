@@ -66,6 +66,7 @@ iphop_tax_dt <- merge(iphop_dt, tax_dt, by = "name") %>%
 check samples per subject
 ```{r}
 merge_dt %>%
+  filter(grepl("Enterocloster", lineage)) %>%
   group_by(mask_id) %>%
   summarize(samples = n_distinct(sampleID)) %>%
   arrange(desc(samples))
@@ -76,7 +77,7 @@ subject  analysis
 
 get specific table for subject
 ```{r}
-subject <- 202376
+subject <- 437219
 sub_total_dt <- merge_dt %>%
   filter(mask_id == subject) %>%
   mutate(species = gsub(".*\\|s__", "", lineage))
@@ -96,7 +97,7 @@ sub_total_dt %>%
 
 Plot a genus
 ```{r}
-genus <- "Bacteroides"
+genus <- "Enterocloster"
 
 bac_select_sub <- sub_total_dt %>%
   select(lineage, species, age_days, sampleID, rel_abundance) %>%
@@ -130,24 +131,28 @@ age_day_dt <- merge_dt %>%
 ```{r}
 ##### plotting
 
-#abbrev <- substr(genus, 1,1)
+len_sp <- length(unique(sub_select_all_dt$species))
+pal <- park_palette("BlueRidgePkwy")
+coul <- colorRampPalette(pal)(len_sp)
+
 tempp <- sub_select_all_dt %>%
   mutate(species = gsub(sprintf("%s", genus), sprintf("%s", substr(genus, 1,1)), species)) %>%
   ggplot(aes(x = age_days, y = reorder(species, desc(avg_age)), 
-             color = kingdom, size = rel_abundance)) +
+             color = reorder(species, avg_age), size = rel_abundance)) +
   geom_point(alpha = 0.8) +
   geom_rug(data = age_day_dt, aes(x = age_days), 
            color="grey50", alpha=1, outside = F,
-           inherit.aes = F, length = unit(0.02, "npc")) + 
-  scale_color_manual(values=c("#F2AD00", "#5BBCD6"), guide = "none") +
-  scale_size(name = "rel.\nabundance") +  
+           inherit.aes = F, length = unit(0.03, "npc")) + 
+  scale_color_manual(values = coul, guide = "none") +
+  scale_size(guide = "none") +  
   facet_grid(vars(kingdom), scales = "free_y", space="free") +
-  theme_bw() +
-  labs(y = "SGB", x = "day of life",
-       title = sprintf("Subject %s\n%s", subject, genus)) +
-  theme(strip.text.y.right = element_text(angle = 0, size = 7),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-        axis.text.y = element_text(size = 7),
+  theme_cowplot() +
+  labs(y = "", x = "Day of Life",
+       title = sprintf("Subject %s, %s", subject, genus)) +
+  theme(text=element_text(family="Helvetica"),
+        strip.text.y.right = element_text(angle = 0, size = 7),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 9),
+        axis.text.y = element_text(size = 9),
         title = element_text(size = 9),
         legend.position = "left")
 #tempp
@@ -162,21 +167,37 @@ detectp <- sub_select_all_dt %>%
   theme_bw() +
   labs(y = "", x = "# times\ndetected",
        title = " \n ") +
-  theme(strip.text.y.right = element_blank(), 
+  theme(text=element_text(family="Helvetica"),
+        strip.text.y.right = element_blank(), 
         strip.background = element_blank(),
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         axis.text.y = element_blank(),
         title = element_text(size = 9))
-#detectp
-combp <- plot_grid(tempp, detectp, align = "h", axis = "b", 
-                   rel_widths = c(20, 3))
+
+jitterp <- sub_select_all_dt %>%
+  group_by(species, kingdom, avg_age) %>%
+  summarize(detected = n(),
+            avg_ab = mean(rel_abundance)) %>%
+  ggplot(aes(x = kingdom, y = detected, color = reorder(species, avg_age), size = avg_ab)) +
+  geom_boxplot(inherit.aes = F, aes(x = kingdom, y = detected), outlier.shape = NA) +
+  geom_jitter(width = 0.05, height = 0, alpha =0.9) +
+  scale_color_manual(values = coul) +
+  labs(x = "", y = "# Times Detected",
+       title = " ") +
+  theme_cowplot() +
+  theme(text=element_text(family="Helvetica", size = 9),
+        legend.position = "off",
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 9))
+
+combp <- plot_grid(tempp, jitterp, align = "h", axis = "b", 
+                   rel_widths = c(20, 5))
 
 combp 
 ```
 
 save
 ```{r}
-ggsave(combp, file = sprintf("%s/charts/subject_phage-bacteria/%s_%s_age_dotplot.pdf", find_rstudio_root_file(), subject, genus), width = 5, height = 5)
+ggsave(combp, file = sprintf("%s/charts/subject_phage-bacteria/%s_%s_age_dotplot.pdf", find_rstudio_root_file(), subject, genus), width = 6, height = 3.5)
 ```
 
 

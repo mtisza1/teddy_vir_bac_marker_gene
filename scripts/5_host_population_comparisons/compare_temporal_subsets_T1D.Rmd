@@ -52,8 +52,7 @@ merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
 load temporal subset dt
 ```{r}
 temporal_sub_dt <- fread(sprintf("%s", subset_table), sep = "\t", header = T) %>%
-  distinct(species, assignment) %>%
-  filter(assignment != "Subset 7")
+  distinct(species, assignment)
 
 prev_sub_dt <- merge(merge_dt, temporal_sub_dt, by = "species") %>%
   group_by(sampleID, assignment) %>%
@@ -89,7 +88,7 @@ merge_prev_sub_dt %>%
         axis.ticks.x = element_blank())
 
 ggsave(file = sprintf("%s/charts/T1D_day_of_life_temporal_subsets_boxplots1.pdf", find_rstudio_root_file()),
-       width = 8, height = 6)
+       width = 7, height = 7)
 ```
 
 
