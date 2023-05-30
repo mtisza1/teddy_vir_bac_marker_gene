@@ -140,6 +140,24 @@ ratiop
 ggsave(ratiop, 
        file = sprintf("%s/charts/ratio_virus_vs_bacteria.readcolor.pdf", find_rstudio_root_file()), 
                  width = 5, height = 3.5)
+
+
+
+rel_abp <- merge_dt %>%
+  mutate(ratio = total_rel_abundance_Virus / total_rel_abundance_Bacteria) %>%
+  filter(ratio < 10) %>%
+  ggscatter(x = "Reads", y = "ratio", size = 4, alpha = 0.4, 
+            stroke = 0, color = "age_days") +
+  theme_bw() +
+  scale_color_gradient2(low = "yellow", mid = "purple", 
+                        high = "grey10", midpoint = 1000, 
+                        name ="day of life") +
+  stat_cor(label.x = 0, label.y = 9) +
+  stat_regline_equation(label.x = 0, label.y = 8) +
+  labs(x = "# of Reads", 
+       y = "Ratio of \n(Virus rel. abundance:Bacteria rel. abundance)")
+
+rel_abp
 ```
 
 
