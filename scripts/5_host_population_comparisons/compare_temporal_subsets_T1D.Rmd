@@ -26,6 +26,9 @@ set paths and filenames
 long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
 metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
 subset_table=sprintf("%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv", find_rstudio_root_file())
+
+T1D_groups_file=sprintf("%s/data/MP142_CASE_CNTRL_T1D_LIST1.csv", find_rstudio_root_file())
+
 ```
 
 load long table and metadata, merge
@@ -45,7 +48,18 @@ meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
   select(-V1) %>%
   mutate(sample = as.character(sample))
 
-merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
+
+groups_dt <- fread(T1D_groups_file, sep = ",", header = T) %>%
+  select(mask_id)
+
+merge_full_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
+
+## filtering down to only subject from TEDDY T1D groups
+
+merge_dt <- merge(merge_full_dt, groups_dt, by = "mask_id") %>%
+  distinct()
+
+rm(merge_full_dt)
 
 ```
 
@@ -60,6 +74,8 @@ prev_sub_dt <- merge(merge_dt, temporal_sub_dt, by = "species") %>%
 
 merge_prev_sub_dt <- merge(prev_sub_dt, meta_dt, by.x = "sampleID", by.y ="sample")
 ```
+
+
 
 plot relative abundance of temporal subsets accross day of life
 ```{r}
@@ -77,9 +93,7 @@ merge_prev_sub_dt %>%
   facet_grid(assignment~factor(rounded_DOL)) +
   stat_pwc(label = "p.adj.signif",
                      method = "wilcoxon",
-           p.adjust.method = "hochberg",
-                     comparisons = 
-                       list(c("Yes", "No"))) +
+           p.adjust.method = "hochberg") +
   labs(x = "day of life (rounded)", 
        y = "Relative Abundance of Subset")  +
   scale_x_discrete(position = "top") +
@@ -87,7 +101,7 @@ merge_prev_sub_dt %>%
         axis.text.x = element_blank(),
         axis.ticks.x = element_blank())
 
-ggsave(file = sprintf("%s/charts/T1D_day_of_life_temporal_subsets_boxplots1.pdf", find_rstudio_root_file()),
+ggsave(file = sprintf("%s/charts/T1D_day_of_life_temporal_subsets_boxplots_selected1.pdf", find_rstudio_root_file()),
        width = 7, height = 7)
 ```
 

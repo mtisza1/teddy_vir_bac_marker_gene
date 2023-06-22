@@ -26,6 +26,8 @@ set paths and filenames
 long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
 metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
 
+T1D_groups_file=sprintf("%s/data/MP142_CASE_CNTRL_T1D_LIST1.csv", find_rstudio_root_file())
+
 ```
 
 load long table and metadata, merge
@@ -40,12 +42,20 @@ long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
                              grepl("k__Euk", lineage) ~ "Eukaryota",
                              TRUE ~ "other"))
 
+groups_dt <- fread(T1D_groups_file, sep = ",", header = T) %>%
+  select(mask_id)
+
 meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
   select(-V1) %>%
   mutate(sample = as.character(sample))
 
-merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
+merge_full_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
 
+## filtering down to only subject from TEDDY T1D groups
+
+merge_dt <- merge(merge_full_dt, groups_dt, by = "mask_id")
+
+rm(merge_full_dt)
 ```
 
 wide format, bray-curtis, VIROME
@@ -53,7 +63,7 @@ wide format, bray-curtis, VIROME
 ```{r}
 
 mask_id_list <- as.list(
-  meta_dt %>% distinct(mask_id)
+  merge_dt %>% distinct(mask_id)
 )
 
 big_bray_long <- data.table(sample_info1=character(), sample_info2=character(), value=numeric())
@@ -67,7 +77,8 @@ for (subjectq in mask_id_list[1]$mask_id) {
                                     temp_long_dt$age_days)
   
   temp_long_dt <- temp_long_dt %>%
-    select(c(sample_info, rel_abundance, lineage, kingdom))
+    select(c(sample_info, rel_abundance, lineage, kingdom)) %>%
+    distinct()
   if(nrow(temp_long_dt) > 1){
     wide_virome_temp_dt <- temp_long_dt %>%
       filter(kingdom == "Virus") %>%
@@ -217,17 +228,17 @@ vir_bray_combp <- plot_grid(vir_bray_T1Dp, vir_bray_Countryp, align = "h", nrow 
 vir_bray_combp
 
 ggsave(vir_bray_combp, 
-       file = sprintf("%s/charts/virome_bray_curtis_T1D_and_country1.pdf", find_rstudio_root_file()), 
+       file = sprintf("%s/charts/virome_bray_curtis_T1D_and_country_selected2.pdf", find_rstudio_root_file()), 
                  width = 6, height = 2.5)
 
 ## save stats tables
 stat.test_vir_t1d <- as.data.frame(stat.test_vir_t1d)
 stat.test_vir_t1d <- apply(stat.test_vir_t1d,2,as.character)
-write.csv(stat.test_vir_t1d, file=sprintf("%s/intermediate_files/wilcoxon_vir_bray_T1D.csv", find_rstudio_root_file()))
+write.csv(stat.test_vir_t1d, file=sprintf("%s/intermediate_files/wilcoxon_vir_bray_T1D_selected.csv", find_rstudio_root_file()))
 
 stat.test_vir_country <- as.data.frame(stat.test_vir_country)
 stat.test_vir_country <- apply(stat.test_vir_country,2,as.character)
-write.csv(stat.test_vir_country, file=sprintf("%s/intermediate_files/wilcoxon_vir_bray_country.csv", find_rstudio_root_file()))
+write.csv(stat.test_vir_country, file=sprintf("%s/intermediate_files/wilcoxon_vir_bray_country_selected.csv", find_rstudio_root_file()))
 ```
 
 intrasubject bray-curtis, BACTERIOME
@@ -235,7 +246,7 @@ intrasubject bray-curtis, BACTERIOME
 ```{r}
 
 mask_id_list <- as.list(
-  meta_dt %>% distinct(mask_id)
+  merge_dt %>% distinct(mask_id)
 )
 
 bac_bray_long <- data.table(sample_info1=character(), sample_info2=character(), value=numeric())
@@ -249,7 +260,8 @@ for (subjectq in mask_id_list[1]$mask_id) {
                                     temp_long_dt$age_days)
   
   temp_long_dt <- temp_long_dt %>%
-    select(c(sample_info, rel_abundance, lineage, kingdom))
+    select(c(sample_info, rel_abundance, lineage, kingdom)) %>%
+    distinct()
   if(nrow(temp_long_dt) > 1){
     wide_virome_temp_dt <- temp_long_dt %>%
       filter(kingdom == "Bacteria") %>%
@@ -399,17 +411,17 @@ bac_bray_combp <- plot_grid(bac_bray_T1Dp, bac_bray_Countryp, align = "h", nrow 
 bac_bray_combp
 
 ggsave(bac_bray_combp, 
-       file = sprintf("%s/charts/bacteriome_bray_curtis_T1D_and_country1.pdf", find_rstudio_root_file()), 
+       file = sprintf("%s/charts/bacteriome_bray_curtis_T1D_and_country_selected1.pdf", find_rstudio_root_file()), 
                  width = 6, height = 2.5)
 
 ## save stats tables
 stat.test_bac_t1d <- as.data.frame(stat.test_bac_t1d)
 stat.test_bac_t1d <- apply(stat.test_bac_t1d,2,as.character)
-write.csv(stat.test_bac_t1d, file=sprintf("%s/intermediate_files/wilcoxon_bac_bray_T1D.csv", find_rstudio_root_file()))
+write.csv(stat.test_bac_t1d, file=sprintf("%s/intermediate_files/wilcoxon_bac_bray_T1D_selected.csv", find_rstudio_root_file()))
 
 stat.test_bac_country <- as.data.frame(stat.test_bac_country)
 stat.test_bac_country <- apply(stat.test_bac_country,2,as.character)
-write.csv(stat.test_bac_country, file=sprintf("%s/intermediate_files/wilcoxon_bac_bray_country.csv", find_rstudio_root_file()))
+write.csv(stat.test_bac_country, file=sprintf("%s/intermediate_files/wilcoxon_bac_bray_country_selected.csv", find_rstudio_root_file()))
 ```
 
 compare virome to bacteriome
@@ -445,12 +457,12 @@ vir_vs_bac_brayp <- rbind(bac_next_bray_dt, vir_next_bray_dt) %>%
 vir_vs_bac_brayp
 
 ggsave(vir_vs_bac_brayp, 
-       file = sprintf("%s/charts/virome_vs_bacteriome_bray_curtis.pdf", find_rstudio_root_file()), 
+       file = sprintf("%s/charts/virome_vs_bacteriome_bray_curtis_selected.pdf", find_rstudio_root_file()), 
                  width = 3, height = 4)
 
 stat.test_kingdom <- as.data.frame(stat.test_kingdom)
 stat.test_kingdom <- apply(stat.test_kingdom,2,as.character)
-write.csv(stat.test_kingdom, file=sprintf("%s/intermediate_files/wilcoxon_bac_vs_vir_bray.csv", find_rstudio_root_file()))
+write.csv(stat.test_kingdom, file=sprintf("%s/intermediate_files/wilcoxon_bac_vs_vir_bray_selected.csv", find_rstudio_root_file()))
 ```
 
 load extra metadata, check imbalanced metadata for T1D groups
@@ -463,12 +475,14 @@ extra_meta_dt <- fread(
 
 full_meta <- merge(extra_meta_dt, meta_dt, by= "mask_id")
 
-full_meta %>%
+full_meta_select <- merge(full_meta, groups_dt, by= "mask_id")
+
+full_meta_select %>%
   group_by(T1D, sex) %>%
   summarise(n = n()) %>%
   mutate(freq = n / sum(n))
 
-chisq.test(full_meta$T1D, full_meta$sex)
+chisq.test(full_meta_select$T1D, full_meta_select$sex)
 
 ```
 
@@ -504,7 +518,7 @@ merge(vir_next_bray_dt, extra_meta_dt, by = "mask_id") %>%
        y = "Avg Bray-Curtis Distance\nto Follow-up Sample",
        title="virus SGBs")
 
-ggsave(file = sprintf("%s/charts/virome_T1D_and_sex_bray_curtis.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/virome_T1D_and_sex_bray_curtis_selected.pdf", find_rstudio_root_file()), 
                  width = 4.5, height = 3)
 ```
 
@@ -538,7 +552,7 @@ merge(bac_next_bray_dt, extra_meta_dt, by = "mask_id") %>%
        y = "Avg Bray-Curtis Distance\nto Follow-up Sample",
        title="bacteria SGBs")
 
-ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_sex_bray_curtis.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_sex_bray_curtis_selected.pdf", find_rstudio_root_file()), 
                  width = 4.5, height = 3)
 ```
 
@@ -567,7 +581,7 @@ vir_next_bray_dt %>%
        y = "Bray-Curtis Distance\nto Follow-up Sample",
        title="virus SGBs")  
 
-ggsave(file = sprintf("%s/charts/virome_T1D_and_dayoflife_bray_curtis.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/virome_T1D_and_dayoflife_bray_curtis_selected.pdf", find_rstudio_root_file()), 
                  width = 6, height = 3.5)     
 ```
 
@@ -596,7 +610,7 @@ bac_next_bray_dt %>%
        y = "Bray-Curtis Distance\nto Follow-up Sample",
        title="bacteria SGBs")  
 
-ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_dayoflife_bray_curtis.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_dayoflife_bray_curtis_selected.pdf", find_rstudio_root_file()), 
                  width = 6, height = 3.5)               
 ```
 
@@ -630,7 +644,7 @@ bac_next_bray_dt %>%
 compare \# samples and rounded DOL by T1D status
 
 ```{r}
-meta_dt %>%
+merge_dt %>%
   group_by(mask_id, T1D) %>%
   summarize(n_samples = n()) %>%
   ggplot(aes(x = T1D, y = n_samples, fill = T1D)) +
@@ -644,7 +658,7 @@ meta_dt %>%
 ```
 
 ```{r}
-meta_dt %>%
+merge_dt %>%
   mutate(rounded_DOL =  round_any(age_days, 100)) %>%
   filter(rounded_DOL <= 1400) %>%
   group_by(rounded_DOL, T1D) %>%
