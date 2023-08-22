@@ -43,7 +43,7 @@ long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
                              TRUE ~ "other"))
 
 groups_dt <- fread(T1D_groups_file, sep = ",", header = T) %>%
-  select(mask_id)
+  select(c(mask_id, case_ind))
 
 meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
   select(-V1) %>%
@@ -138,14 +138,99 @@ get bray-curtis distance to next sample VIROME
 ```{r}
 vir_next_bray_dt <- big_bray_long %>%
   group_by(mask_id1) %>%
-  filter(n_distinct(sampleID1) >= 10) %>%
+  filter(n_distinct(sampleID1) >= 2) %>%
   ungroup() %>%
   group_by(sampleID1) %>%
   filter(days_apart == min(days_apart))
 
 vir_next_bray_dt <- merge(vir_next_bray_dt, meta_dt, by.x = "sampleID1", by.y = "sample")
+
+## add groups
+vir_next_bray_dt <- merge(vir_next_bray_dt, groups_dt, by = "mask_id")
+
+```
+
+average bray distance by subject/pair VIROME
+```{r}
+vir_bray_sum_subj <- vir_next_bray_dt %>%
+  group_by(mask_id1) %>%
+  summarize(average_bray = mean(bray_curtis),
+            T1D = T1D,
+            pair_num = case_ind) %>%
+  ungroup() %>%
+  distinct() %>%
+  filter(!pair_num == 114)
+```
+
+```{r}
+
+
+vir_bray_subj_wide <- vir_bray_sum_subj %>%
+  group_by(pair_num) %>%
+  filter(n() == 2) %>%
+  ungroup() %>%
+  pivot_wider(id_cols = pair_num, names_from = T1D, values_from = average_bray)
+```
+
+new plot average bray distance by T1D and country status VIROME
+```{r}
+vir_bray_sum_subj %>%
+  ggplot(aes(factor(T1D), average_bray)) +
+  geom_boxplot(aes(fill = factor(T1D)), outlier.shape = NA, alpha = 0.6) +
+  geom_jitter(color="grey20", width = 0.1, alpha = 0.5, stroke = 0) +
+  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
+  theme_bw() +
+  stat_compare_means(paired = TRUE)
+
+vir_bray_subj_wide %>%
+  ggpaired(cond1 = "Yes", cond2 = "No",
+    fill = "condition", palette = c("#8CBEB1", "orangered"),
+    line.color = "lightgrey", ggtheme = theme_bw(), line.size = 0.1) +
+  stat_compare_means(paired = TRUE) 
   
 ```
+
+```{r}
+wilcox.test(vir_bray_subj_wide$Yes, vir_bray_subj_wide$No, paired = TRUE, alternative = "two.sided")
+
+
+```
+
+
+```{r}
+## this functions rounds a number up to the nearest 100
+round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
+
+DOL_vir_pair_dt <- vir_next_bray_dt %>%
+  mutate(rounded_DOL =  round_any(age_days, 100)) %>%
+  filter(rounded_DOL <= 1400) %>%
+  group_by(mask_id1, rounded_DOL) %>%
+  summarize(average_bray = mean(bray_curtis),
+            T1D = T1D,
+            pair_num = case_ind) %>%
+  ungroup() %>%
+  distinct() %>%
+  filter(!pair_num == 114)
+```
+
+```{r}
+DOL_vir_pair_subj_wide <- DOL_vir_pair_dt %>%
+  group_by(pair_num, rounded_DOL) %>%
+  filter(n() == 2) %>%
+  ungroup() %>%
+  pivot_wider(id_cols = c(pair_num, rounded_DOL), names_from = T1D, values_from = average_bray)
+```
+
+```{r}
+DOL_vir_pair_subj_wide %>%
+  ggpaired(cond1 = "Yes", cond2 = "No",
+    fill = "condition", palette = c("#8CBEB1", "orangered"),
+    line.color = "lightgrey", ggtheme = theme_bw(), line.size = 0.1,
+    facet.by = "rounded_DOL") +
+  stat_compare_means(paired = TRUE) 
+```
+
+
 
 plot average bray distance by T1D and country status VIROME
 
