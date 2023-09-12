@@ -1,0 +1,69 @@
+---
+title: "Inspect common bacterial SGBs in temporal subsets"
+output: html_notebook
+---
+
+load libraries
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(wesanderson)
+```
+
+set paths and filenames
+
+```{r}
+### files
+subset_table=sprintf("%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv", find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+iphop_table=sprintf("%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv", find_rstudio_root_file())
+
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
+
+```
+
+get basic stats on SGBs
+```{r}
+subset_dt <- fread(subset_table, header = T, sep = "\t")
+
+bac_sp_dt <- subset_dt %>%
+  filter(kingdom == "Bacteria") %>%
+  distinct(species, assignment)
+  
+
+```
+
+get all abundance data and merge/subset to assigned bacterial SGBs
+
+```{r}
+long_dt <- fread(long_table, header = T, sep = "\t") %>%
+  mutate(species = gsub(".*s__","s__", lineage ))
+
+only_bac_subs_dt <- merge(long_dt, bac_sp_dt, by = "species")
+```
+
+
+summarize table to get # of detections and average abundance
+```{r}
+bac_sub_sum_dt <- only_bac_subs_dt %>% 
+  group_by(species, assignment) %>%
+  summarize(detections = n(),
+            avg_rel_abundance = mean(rel_abundance)) %>%
+  arrange(desc(detections))
+  
+```
+inspect abundant bacteria in each group
+```{r}
+bac_sub_sum_dt %>% 
+  filter(assignment == "Subset 6") %>%
+  arrange(desc(avg_rel_abundance * detections))
+```
+
+
+
+
+
