@@ -26,6 +26,8 @@ set paths and filenames
 long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
 metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
 
+T1D_groups_file=sprintf("%s/data/MP142_CASE_CNTRL_T1D_LIST1.csv", find_rstudio_root_file())
+
 ```
 
 load long table and metadata, merge
@@ -40,12 +42,20 @@ long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
                              grepl("k__Euk", lineage) ~ "Eukaryota",
                              TRUE ~ "other"))
 
+groups_dt <- fread(T1D_groups_file, sep = ",", header = T) %>%
+  select(c(mask_id, case_ind))
+
 meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
   select(-V1) %>%
   mutate(sample = as.character(sample))
 
-merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
+merge_full_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
 
+## filtering down to only subject from TEDDY T1D groups
+
+merge_dt <- merge(merge_full_dt, groups_dt, by = "mask_id")
+
+rm(merge_full_dt)
 ```
 
 wide format, bray-curtis, VIROME
@@ -53,7 +63,7 @@ wide format, bray-curtis, VIROME
 ```{r}
 
 mask_id_list <- as.list(
-  meta_dt %>% distinct(mask_id)
+  merge_dt %>% distinct(mask_id)
 )
 
 big_bray_long <- data.table(sample_info1=character(), sample_info2=character(), value=numeric())
@@ -67,7 +77,8 @@ for (subjectq in mask_id_list[1]$mask_id) {
                                     temp_long_dt$age_days)
   
   temp_long_dt <- temp_long_dt %>%
-    select(c(sample_info, rel_abundance, lineage, kingdom))
+    select(c(sample_info, rel_abundance, lineage, kingdom)) %>%
+    distinct()
   if(nrow(temp_long_dt) > 1){
     wide_virome_temp_dt <- temp_long_dt %>%
       filter(kingdom == "Virus") %>%
@@ -127,115 +138,167 @@ get bray-curtis distance to next sample VIROME
 ```{r}
 vir_next_bray_dt <- big_bray_long %>%
   group_by(mask_id1) %>%
-  filter(n_distinct(sampleID1) >= 10) %>%
+  filter(n_distinct(sampleID1) >= 2) %>%
   ungroup() %>%
   group_by(sampleID1) %>%
   filter(days_apart == min(days_apart))
 
 vir_next_bray_dt <- merge(vir_next_bray_dt, meta_dt, by.x = "sampleID1", by.y = "sample")
+
+## add groups
+vir_next_bray_dt <- merge(vir_next_bray_dt, groups_dt, by = "mask_id")
+
+```
+
+average bray distance by subject/pair VIROME
+```{r}
+vir_bray_sum_subj <- vir_next_bray_dt %>%
+  group_by(mask_id1) %>%
+  summarize(average_bray = mean(bray_curtis),
+            T1D = T1D,
+            pair_num = case_ind) %>%
+  ungroup() %>%
+  distinct() %>%
+  filter(!pair_num == 114)
+```
+
+```{r}
+
+
+vir_bray_subj_wide <- vir_bray_sum_subj %>%
+  group_by(pair_num) %>%
+  filter(n() == 2) %>%
+  ungroup() %>%
+  pivot_wider(id_cols = pair_num, names_from = T1D, values_from = average_bray)
+```
+
+```{r}
+vir_bray_subj_wide %>%
+  ggpaired(cond1 = "Yes", cond2 = "No",
+    fill = "condition", palette = c("#8CBEB1", "orangered"),
+    line.color = "lightgrey", ggtheme = theme_bw(), line.size = 0.1) +
+  stat_compare_means(paired = TRUE) 
   
 ```
 
-plot average bray distance by T1D and country status VIROME
+```{r}
+wilcox.test(vir_bray_subj_wide$Yes, vir_bray_subj_wide$No, paired = TRUE)
+
+```
+```{r}
+vir_bray_sum_subj %>%
+  group_by(pair_num) %>%
+  filter(n() != 2)
+```
+
+new plot average bray distance by T1D and country status VIROME
+```{r}
+
+vir_bray_sum_subj  %>%
+  group_by(pair_num) %>%
+  filter(n() == 2) %>%
+  ggplot(aes(T1D, average_bray)) +
+  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
+  geom_point(color="grey20", alpha = 0.5, stroke = 0) +
+  geom_line(aes(group = pair_num), color = "lightgrey", alpha = 0.5) +
+  geom_text(label = "Wilcoxon,\np-value = 0.015", x = "No", 
+            y = 1, size = 8/.pt) +
+  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
+  ylim(c(0.2, 1.05)) +
+  theme_bw() +
+  theme(legend.position = "bottom", 
+        axis.text.x = element_blank()) +
+  labs(y = "Bray-Curtis Distance\nto Follow-up Sample",
+       title="virus SGBs")
+
+ggsave(file = sprintf("%s/charts/virome_bray_curtis_T1D_NCC_paired.pdf", find_rstudio_root_file()), 
+                 width = 2.5, height = 3.5)  
+```
+
+
+
+
 
 ```{r}
-## statistical test
-stat.test_vir_t1d <- vir_next_bray_dt %>%
-  group_by(mask_id1) %>%
+## this functions rounds a number up to the nearest 100
+round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
+
+DOL_vir_pair_dt <- vir_next_bray_dt %>%
+  mutate(rounded_DOL =  round_any(age_days, 100)) %>%
+  filter(rounded_DOL <= 1400) %>%
+  group_by(mask_id1, rounded_DOL) %>%
   summarize(average_bray = mean(bray_curtis),
-            T1D = T1D) %>%
+            T1D = T1D,
+            pair_num = case_ind) %>%
   ungroup() %>%
   distinct() %>%
-  wilcox_test(average_bray ~ T1D) %>%
-  add_significance(p.col="p", output.col="p.signif")
-stat.test_vir_t1d <- stat.test_vir_t1d %>% add_xy_position(x = "T1D")
-stat.test_vir_t1d
-
-
-vir_bray_T1Dp <- vir_next_bray_dt %>%
-  group_by(mask_id1) %>%
-  summarize(average_bray = mean(bray_curtis),
-            T1D = T1D) %>%
-  ungroup() %>%
-  distinct() %>%
-  ggplot(aes(factor(T1D), average_bray)) +
-  geom_boxplot(aes(fill = factor(T1D)), outlier.shape = NA, alpha = 0.6) +
-  geom_jitter(color="grey20", width = 0.15, alpha = 0.5, stroke = 0) +
-  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
-  theme_bw() +
-  stat_pvalue_manual(stat.test_vir_t1d, label = "p.signif", x.position = 1.05, tip.length = 0.01, coord.flip = TRUE)  + 
-  coord_flip() +
-  theme(legend.position = "Off") +
-  labs(x = "Type-1 Diabetes", y = "Avg Bray-Curtis Distance\nto Follow-up Sample")
-vir_bray_T1Dp
-
-## statistical test
-stat.test_vir_country <- vir_next_bray_dt %>%
-  mutate(Country = case_when(
-           country == 1 ~ "USA",
-           country == 2 ~ "FIN",
-           country == 3 ~ "GER",
-           country == 4 ~ "SWE",
-           TRUE ~ "other"
-         )) %>%
-  group_by(mask_id1) %>%
-  summarize(average_bray = mean(bray_curtis),
-            Country = Country) %>%
-  ungroup() %>%
-  distinct() %>%
-  wilcox_test(average_bray ~ Country) %>%
-  add_significance(p.col="p", output.col="p.signif")
-stat.test_vir_country <- stat.test_vir_country %>% add_xy_position(x = "Country")
-stat.test_vir_country
-
-
-vir_bray_Countryp <- vir_next_bray_dt %>%
-  mutate(Country = case_when(
-           country == 1 ~ "USA",
-           country == 2 ~ "FIN",
-           country == 3 ~ "GER",
-           country == 4 ~ "SWE",
-           TRUE ~ "other"
-         )) %>%
-  group_by(mask_id1) %>%
-  summarize(average_bray = mean(bray_curtis),
-            Country = Country) %>%
-  ungroup() %>%
-  distinct() %>%
-  ggplot(aes(factor(Country), average_bray)) +
-  geom_boxplot(aes(fill = factor(Country)), outlier.shape = NA, alpha = 0.6) +
-  geom_jitter(color="grey20", width = 0.15, alpha = 0.5, stroke = 0) +
-  scale_fill_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3")) +
-  theme_bw() +
-  stat_pvalue_manual(stat.test_vir_country, label = "p.signif", x.position = 1.05, tip.length = 0.01, step.increase = 0.05, coord.flip = TRUE)  + 
-  coord_flip() +
-  theme(legend.position = "Off") +
-  labs(x = "Country", y = "Avg Bray-Curtis Distance\nto Follow-up Sample")
-vir_bray_Countryp
-
-vir_bray_combp <- plot_grid(vir_bray_T1Dp, vir_bray_Countryp, align = "h", nrow = 1, rel_widths = c(50/100, 50/100))
-vir_bray_combp
-
-ggsave(vir_bray_combp, 
-       file = sprintf("%s/charts/virome_bray_curtis_T1D_and_country1.pdf", find_rstudio_root_file()), 
-                 width = 6, height = 2.5)
-
-## save stats tables
-stat.test_vir_t1d <- as.data.frame(stat.test_vir_t1d)
-stat.test_vir_t1d <- apply(stat.test_vir_t1d,2,as.character)
-write.csv(stat.test_vir_t1d, file=sprintf("%s/intermediate_files/wilcoxon_vir_bray_T1D.csv", find_rstudio_root_file()))
-
-stat.test_vir_country <- as.data.frame(stat.test_vir_country)
-stat.test_vir_country <- apply(stat.test_vir_country,2,as.character)
-write.csv(stat.test_vir_country, file=sprintf("%s/intermediate_files/wilcoxon_vir_bray_country.csv", find_rstudio_root_file()))
+  filter(!pair_num == 114)
 ```
+
+```{r}
+DOL_vir_pair_subj_wide <- DOL_vir_pair_dt %>%
+  group_by(pair_num, rounded_DOL) %>%
+  filter(n() == 2) %>%
+  ungroup() %>%
+  pivot_wider(id_cols = c(pair_num, rounded_DOL), names_from = T1D, values_from = average_bray)
+```
+
+```{r}
+DOL_vir_pair_subj_wide %>%
+  ggpaired(cond1 = "Yes", cond2 = "No",
+    fill = "condition", palette = c("#8CBEB1", "orangered"),
+    line.color = "lightgrey", ggtheme = theme_bw(), line.size = 0.1,
+    facet.by = "rounded_DOL") +
+  stat_compare_means(paired = TRUE) 
+```
+
+```{r}
+DOL_vir_pair_wilcox_dt <- DOL_vir_pair_subj_wide %>% 
+  group_by(rounded_DOL) %>%
+  do(w = wilcox.test(.$Yes, .$No, data=., paired=TRUE)) %>% 
+       summarise(rounded_DOL, 
+                 Wilcox = w$p.value,
+                 aster = case_when(Wilcox < 0.0001 ~ "****",
+                                   Wilcox < 0.001 ~ "***", 
+                                   Wilcox < 0.01 ~ "**",
+                                   Wilcox < 0.05 ~ "*",
+                                   TRUE ~ "ns"))
+
+DOL_vir_pair_wil_dt <- merge(DOL_vir_pair_dt, DOL_vir_pair_wilcox_dt, by = "rounded_DOL")
+```
+
+```{r}
+DOL_vir_pair_wil_dt %>%
+  group_by(rounded_DOL,pair_num) %>%
+  filter(n() == 2) %>%
+  ggplot(aes(T1D, average_bray)) +
+  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
+  geom_point(color="grey20", alpha = 0.5, stroke = 0, size = 0.8) +
+  geom_line(aes(group = pair_num), color = "lightgrey", alpha = 0.3) +
+  geom_text(data = DOL_vir_pair_wilcox_dt, aes(label = aster), x = "No", y = 1.05) +
+  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
+  ylim(c(NA, 1.1)) +
+  facet_wrap(vars(rounded_DOL), nrow = 1) +
+  theme_bw() +
+  theme(legend.position = "bottom", 
+        axis.text.x = element_blank()) +
+  labs(x = "day of life (rounded)", 
+       y = "Bray-Curtis Distance\nto Follow-up Sample",
+       title="virus SGBs")
+
+ggsave(file = sprintf("%s/charts/virome_T1D_and_dayoflife_bray_curtis_NCC_paired.pdf", find_rstudio_root_file()), 
+                 width = 6, height = 3.5)  
+```
+
+
+
 
 intrasubject bray-curtis, BACTERIOME
 
 ```{r}
 
 mask_id_list <- as.list(
-  meta_dt %>% distinct(mask_id)
+  merge_dt %>% distinct(mask_id)
 )
 
 bac_bray_long <- data.table(sample_info1=character(), sample_info2=character(), value=numeric())
@@ -249,7 +312,8 @@ for (subjectq in mask_id_list[1]$mask_id) {
                                     temp_long_dt$age_days)
   
   temp_long_dt <- temp_long_dt %>%
-    select(c(sample_info, rel_abundance, lineage, kingdom))
+    select(c(sample_info, rel_abundance, lineage, kingdom)) %>%
+    distinct()
   if(nrow(temp_long_dt) > 1){
     wide_virome_temp_dt <- temp_long_dt %>%
       filter(kingdom == "Bacteria") %>%
@@ -309,374 +373,153 @@ get bray-curtis distance to next sample BACTERIOME
 ```{r}
 bac_next_bray_dt <- bac_bray_long %>%
   group_by(mask_id1) %>%
-  filter(n_distinct(sampleID1) >= 10) %>%
+  filter(n_distinct(sampleID1) >= 2) %>%
   ungroup() %>%
   group_by(sampleID1) %>%
   filter(days_apart == min(days_apart))
 
 bac_next_bray_dt <- merge(bac_next_bray_dt, meta_dt, by.x = "sampleID1", by.y = "sample")
+
+## add groups
+bac_next_bray_dt <- merge(bac_next_bray_dt, groups_dt, by = "mask_id")
+
+```
+
+average bray distance by subject/pair BACTERIOME
+```{r}
+bac_bray_sum_subj <- bac_next_bray_dt %>%
+  group_by(mask_id1) %>%
+  summarize(average_bray = mean(bray_curtis),
+            T1D = T1D,
+            pair_num = case_ind) %>%
+  ungroup() %>%
+  distinct() %>%
+  filter(!pair_num == 114)
+```
+
+```{r}
+
+
+bac_bray_subj_wide <- bac_bray_sum_subj %>%
+  group_by(pair_num) %>%
+  filter(n() == 2) %>%
+  ungroup() %>%
+  pivot_wider(id_cols = pair_num, names_from = T1D, values_from = average_bray)
+```
+
+```{r}
+bac_bray_subj_wide %>%
+  ggpaired(cond1 = "Yes", cond2 = "No",
+    fill = "condition", palette = c("#8CBEB1", "orangered"),
+    line.color = "lightgrey", ggtheme = theme_bw(), line.size = 0.1) +
+  stat_compare_means(paired = TRUE) 
   
 ```
 
-plot average bray distance by T1D and country status BACTERIOME
-
 ```{r}
-## statistical test
-stat.test_bac_t1d <- bac_next_bray_dt %>%
-  group_by(mask_id1) %>%
-  summarize(average_bray = mean(bray_curtis),
-            T1D = T1D) %>%
-  ungroup() %>%
-  distinct() %>%
-  wilcox_test(average_bray ~ T1D) %>%
-  add_significance(p.col="p", output.col="p.signif")
-stat.test_bac_t1d <- stat.test_bac_t1d %>% add_xy_position(x = "T1D")
-stat.test_bac_t1d
-
-
-bac_bray_T1Dp <- bac_next_bray_dt %>%
-  group_by(mask_id1) %>%
-  summarize(average_bray = mean(bray_curtis),
-            T1D = T1D) %>%
-  ungroup() %>%
-  distinct() %>%
-  ggplot(aes(factor(T1D), average_bray)) +
-  geom_boxplot(aes(fill = factor(T1D)), outlier.shape = NA, alpha = 0.6) +
-  geom_jitter(color="grey20", width = 0.15, alpha = 0.5, stroke = 0) +
-  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
-  theme_bw() +
-  stat_pvalue_manual(stat.test_bac_t1d, label = "p.signif", x.position = 1.05, tip.length = 0.01, coord.flip = TRUE)  + 
-  coord_flip() +
-  theme(legend.position = "Off") +
-  labs(x = "Type-1 Diabetes", y = "Avg Bray-Curtis Distance\nto Follow-up Sample")
-bac_bray_T1Dp
-
-## statistical test
-stat.test_bac_country <- bac_next_bray_dt %>%
-  mutate(Country = case_when(
-           country == 1 ~ "USA",
-           country == 2 ~ "FIN",
-           country == 3 ~ "GER",
-           country == 4 ~ "SWE",
-           TRUE ~ "other"
-         )) %>%
-  group_by(mask_id1) %>%
-  summarize(average_bray = mean(bray_curtis),
-            Country = Country) %>%
-  ungroup() %>%
-  distinct() %>%
-  wilcox_test(average_bray ~ Country) %>%
-  add_significance(p.col="p", output.col="p.signif")
-stat.test_bac_country <- stat.test_bac_country %>% add_xy_position(x = "Country")
-stat.test_bac_country
-
-
-bac_bray_Countryp <- bac_next_bray_dt %>%
-  mutate(Country = case_when(
-           country == 1 ~ "USA",
-           country == 2 ~ "FIN",
-           country == 3 ~ "GER",
-           country == 4 ~ "SWE",
-           TRUE ~ "other"
-         )) %>%
-  group_by(mask_id1) %>%
-  summarize(average_bray = mean(bray_curtis),
-            Country = Country) %>%
-  ungroup() %>%
-  distinct() %>%
-  ggplot(aes(factor(Country), average_bray)) +
-  geom_boxplot(aes(fill = factor(Country)), outlier.shape = NA, alpha = 0.6) +
-  geom_jitter(color="grey20", width = 0.15, alpha = 0.5, stroke = 0) +
-  scale_fill_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3")) +
-  theme_bw() +
-  stat_pvalue_manual(stat.test_bac_country, label = "p.signif", x.position = 1.05, tip.length = 0.01, step.increase = 0.05, coord.flip = TRUE)  + 
-  coord_flip() +
-  theme(legend.position = "Off") +
-  labs(x = "Country", y = "Avg Bray-Curtis Distance\nto Follow-up Sample")
-bac_bray_Countryp
-
-bac_bray_combp <- plot_grid(bac_bray_T1Dp, bac_bray_Countryp, align = "h", nrow = 1, rel_widths = c(50/100, 50/100))
-bac_bray_combp
-
-ggsave(bac_bray_combp, 
-       file = sprintf("%s/charts/bacteriome_bray_curtis_T1D_and_country1.pdf", find_rstudio_root_file()), 
-                 width = 6, height = 2.5)
-
-## save stats tables
-stat.test_bac_t1d <- as.data.frame(stat.test_bac_t1d)
-stat.test_bac_t1d <- apply(stat.test_bac_t1d,2,as.character)
-write.csv(stat.test_bac_t1d, file=sprintf("%s/intermediate_files/wilcoxon_bac_bray_T1D.csv", find_rstudio_root_file()))
-
-stat.test_bac_country <- as.data.frame(stat.test_bac_country)
-stat.test_bac_country <- apply(stat.test_bac_country,2,as.character)
-write.csv(stat.test_bac_country, file=sprintf("%s/intermediate_files/wilcoxon_bac_bray_country.csv", find_rstudio_root_file()))
-```
-
-compare virome to bacteriome
-
-```{r}
-bac_next_bray_dt$kingdom <- "Bacteria"
-vir_next_bray_dt$kingdom <- "Virus"
-
-stat.test_kingdom <- rbind(bac_next_bray_dt, vir_next_bray_dt) %>%
-  group_by(mask_id1, kingdom) %>%
-  summarize(average_bray = mean(bray_curtis)) %>%
-  ungroup() %>%
-  distinct() %>%
-  wilcox_test(average_bray ~ kingdom, paired = TRUE) %>%
-  add_significance(p.col="p", output.col="p.signif")
-stat.test_kingdom
-
-vir_vs_bac_brayp <- rbind(bac_next_bray_dt, vir_next_bray_dt) %>%
-  group_by(mask_id1, kingdom) %>%
-  summarize(average_bray = mean(bray_curtis)) %>%
-  ungroup() %>%
-  distinct() %>%
-  ggplot(aes(factor(kingdom), average_bray)) +
-  geom_boxplot(aes(fill = factor(kingdom)), outlier.shape = NA, alpha = 0.6) +
-  geom_jitter(color="grey20", width = 0.15, alpha = 0.3, stroke = 0) +
-  theme_bw() + 
-  xlab("") + 
-  ylab("Avg Bray-Curtis Distance\nto Follow-up Sample") + 
-  scale_fill_manual(values=c("#F2AD00", "#5BBCD6")) +
-  stat_pvalue_manual(stat.test_kingdom, label = "p.signif", y.position=1.05, tip.length = 0.01) +
-  theme(axis.text.x = element_text(angle = 90, hjust=0.8)) +
-  guides(fill=guide_legend(title="SGB type"))
-vir_vs_bac_brayp
-
-ggsave(vir_vs_bac_brayp, 
-       file = sprintf("%s/charts/virome_vs_bacteriome_bray_curtis.pdf", find_rstudio_root_file()), 
-                 width = 3, height = 4)
-
-stat.test_kingdom <- as.data.frame(stat.test_kingdom)
-stat.test_kingdom <- apply(stat.test_kingdom,2,as.character)
-write.csv(stat.test_kingdom, file=sprintf("%s/intermediate_files/wilcoxon_bac_vs_vir_bray.csv", find_rstudio_root_file()))
-```
-
-load extra metadata, check imbalanced metadata for T1D groups
-
-```{r}
-extra_meta_dt <- fread(
-  "/Users/u241374/mike_tisza/teddy_virome/data_files2/MP142_FLAT_V2.csv", 
-  sep = ",", header = T) %>%
-  select(c(mask_id, gestational_age, bmi, weightgain, sex, hla_category, jaundice, fullsibling, halfsibling))
-
-full_meta <- merge(extra_meta_dt, meta_dt, by= "mask_id")
-
-full_meta %>%
-  group_by(T1D, sex) %>%
-  summarise(n = n()) %>%
-  mutate(freq = n / sum(n))
-
-chisq.test(full_meta$T1D, full_meta$sex)
+wilcox.test(bac_bray_subj_wide$Yes, bac_bray_subj_wide$No, paired = TRUE)
 
 ```
 
-sex has imbalance
-
-check breakdown by sex, virome
-
+new plot average bray distance by T1D and country status VIROME
 ```{r}
 
-
-merge(vir_next_bray_dt, extra_meta_dt, by = "mask_id") %>%
-  group_by(mask_id1) %>%
-  summarize(average_bray = mean(bray_curtis),
-            sex = sex,
-            T1D = T1D) %>%
-  replace(is.na(.), 0) %>%
-  ungroup() %>%
-  distinct() %>%
+bac_bray_sum_subj %>%
+  group_by(pair_num) %>%
+  filter(n() == 2) %>%
   ggplot(aes(T1D, average_bray)) +
   geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
-  geom_point(aes(fill = T1D), position = position_jitterdodge(jitter.width = 0.15), 
-             color = "grey20", alpha = 0.3)  +
+  geom_point(color="grey20", alpha = 0.5, stroke = 0) +
+  geom_line(aes(group = pair_num), color = "lightgrey", alpha = 0.5) +
+  geom_text(label = "Wilcoxon,\np-value = 0.0009", x = "No", 
+            y = 1, size = 8/.pt) +
   scale_fill_manual(values=c("#8CBEB1", "orangered")) +
+  ylim(c(0.2, 1.05)) +
   theme_bw() +
-  facet_wrap(~sex, ncol = 1) +
-  stat_compare_means(label = "p.signif",
-                     method = "wilcox",
-                     comparisons = 
-                       list(c("Yes", "No"))) +
-  coord_flip() +
-  #theme(legend.position = "Off") #+
-  labs(x = "Type-1 Diabetes", 
-       y = "Avg Bray-Curtis Distance\nto Follow-up Sample",
-       title="virus SGBs")
-
-ggsave(file = sprintf("%s/charts/virome_T1D_and_sex_bray_curtis.pdf", find_rstudio_root_file()), 
-                 width = 4.5, height = 3)
-```
-
-check breakdown by sex, bacteriome
-
-```{r}
-
-
-merge(bac_next_bray_dt, extra_meta_dt, by = "mask_id") %>%
-  group_by(mask_id1) %>%
-  summarize(average_bray = mean(bray_curtis),
-            sex = sex,
-            T1D = T1D) %>%
-  replace(is.na(.), 0) %>%
-  ungroup() %>%
-  distinct() %>%
-  ggplot(aes(T1D, average_bray)) +
-  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
-  geom_point(aes(fill = T1D), position = position_jitterdodge(jitter.width = 0.15), 
-             color = "grey20", alpha = 0.3)  +
-  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
-  theme_bw() +
-  facet_wrap(~sex, ncol = 1) +
-  stat_compare_means(label = "p.signif",
-                     method = "wilcox",
-                     comparisons = 
-                       list(c("Yes", "No"))) +
-  coord_flip() +
-  #theme(legend.position = "Off") #+
-  labs(x = "Type-1 Diabetes", 
-       y = "Avg Bray-Curtis Distance\nto Follow-up Sample",
+  theme(legend.position = "bottom", 
+        axis.text.x = element_blank()) +
+  labs(y = "Bray-Curtis Distance\nto Follow-up Sample",
        title="bacteria SGBs")
 
-ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_sex_bray_curtis.pdf", find_rstudio_root_file()), 
-                 width = 4.5, height = 3)
+ggsave(file = sprintf("%s/charts/bacteriome_bray_curtis_T1D_NCC_paired.pdf", find_rstudio_root_file()), 
+                 width = 2.5, height = 3.5)  
 ```
 
-plot bray-curtis distance of samples across day of life bins, virome
 
+DOL BACTERIOME
 ```{r}
 ## this functions rounds a number up to the nearest 100
 round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
 
-vir_next_bray_dt %>%
+DOL_bac_pair_dt <- bac_next_bray_dt %>%
   mutate(rounded_DOL =  round_any(age_days, 100)) %>%
   filter(rounded_DOL <= 1400) %>%
-  ggplot(aes(T1D, bray_curtis)) +
-  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
-  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
-  theme_bw() +
-  ylim(c(0,1.2)) +
-  facet_wrap(~factor(rounded_DOL), nrow = 1) +
-  stat_compare_means(label = "p.signif",
-                     method = "wilcox",
-                     comparisons = 
-                       list(c("Yes", "No"))) +
-  theme(legend.position = "bottom", 
-        axis.text.x = element_blank()) +
-  labs(x = "day of life (rounded)", 
-       y = "Bray-Curtis Distance\nto Follow-up Sample",
-       title="virus SGBs")  
-
-ggsave(file = sprintf("%s/charts/virome_T1D_and_dayoflife_bray_curtis.pdf", find_rstudio_root_file()), 
-                 width = 6, height = 3.5)     
-```
-
-plot bray-curtis distance of samples across day of life bins, bacteriome
-
-```{r}
-## this functions rounds a number up to the nearest 100
-round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
-
-bac_next_bray_dt %>%
-  mutate(rounded_DOL =  round_any(age_days, 100)) %>%
-  filter(rounded_DOL <= 1400) %>%
-  ggplot(aes(T1D, bray_curtis)) +
-  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
-  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
-  theme_bw() +
-  ylim(c(0,1.2)) +
-  facet_wrap(~factor(rounded_DOL), nrow = 1) +
-  stat_compare_means(label = "p.signif",
-                     method = "wilcox",
-                     comparisons = 
-                       list(c("Yes", "No"))) +
-  theme(legend.position = "bottom", 
-        axis.text.x = element_blank()) +
-  labs(x = "day of life (rounded)", 
-       y = "Bray-Curtis Distance\nto Follow-up Sample",
-       title="bacteria SGBs")  
-
-ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_dayoflife_bray_curtis.pdf", find_rstudio_root_file()), 
-                 width = 6, height = 3.5)               
-```
-
-```{r}
-## this functions rounds a number up to the nearest 100
-round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
-
-bac_next_bray_dt %>%
-  mutate(rounded_DOL =  round_any(age_days, 100)) %>%
-  filter(rounded_DOL <= 1400,
-         days_apart <=100) %>%
-  ggplot(aes(T1D, days_apart)) +
-  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
-  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
-  theme_bw() +
-  ylim(c(0,120)) +
-  facet_wrap(~factor(rounded_DOL), nrow = 1) +
-  stat_compare_means(label = "p.signif",
-                     method = "wilcox",
-                     comparisons = 
-                       list(c("Yes", "No"))) +
-  theme(legend.position = "bottom", 
-        axis.text.x = element_blank()) +
-  labs(x = "day of life (rounded)", 
-       y = "Days Apart\nto Follow-up Sample",
-       title="bacteria SGBs")  
-
-           
-```
-
-compare \# samples and rounded DOL by T1D status
-
-```{r}
-meta_dt %>%
-  group_by(mask_id, T1D) %>%
-  summarize(n_samples = n()) %>%
-  ggplot(aes(x = T1D, y = n_samples, fill = T1D)) +
-  geom_boxplot() +
-  stat_compare_means(label = "p.signif",
-                     method = "wilcox",
-                     comparisons = 
-                       list(c("Yes", "No")))
-  
-  
-```
-
-```{r}
-meta_dt %>%
-  mutate(rounded_DOL =  round_any(age_days, 100)) %>%
-  filter(rounded_DOL <= 1400) %>%
-  group_by(rounded_DOL, T1D) %>%
-  summarize(n_samples = n()) %>%
+  group_by(mask_id1, rounded_DOL) %>%
+  summarize(average_bray = mean(bray_curtis),
+            T1D = T1D,
+            pair_num = case_ind) %>%
   ungroup() %>%
-  pivot_wider(names_from = T1D, 
-            values_from = n_samples, 
-            values_fill = 0) %>%
-  mutate(ratio_No_Yes = No/Yes) %>%
-  ggplot(aes(x = rounded_DOL, y = ratio_No_Yes)) +
-  geom_point() +
-  geom_line()
-
-  
-  
+  distinct() %>%
+  filter(!pair_num == 114)
 ```
 
 ```{r}
-meta_dt %>%
-  ggplot(aes(x = T1D, y = age_days)) +
-  geom_violin()
-
-meta_dt %>%
-  group_by(mask_id, T1D) %>%
-  arrange(age_days) %>%
-  summarize(firstd = first(age_days),
-            lastd = last(age_days),
-            avg_age = mean(age_days)) %>%
-  mutate(span = lastd - firstd) %>%
-  ggplot(aes(x = T1D, y = avg_age)) +
-  geom_boxplot()
+DOL_bac_pair_subj_wide <- DOL_bac_pair_dt %>%
+  group_by(pair_num, rounded_DOL) %>%
+  filter(n() == 2) %>%
+  ungroup() %>%
+  pivot_wider(id_cols = c(pair_num, rounded_DOL), names_from = T1D, values_from = average_bray)
 ```
+
+```{r}
+DOL_bac_pair_subj_wide %>%
+  ggpaired(cond1 = "Yes", cond2 = "No",
+    fill = "condition", palette = c("#8CBEB1", "orangered"),
+    line.color = "lightgrey", ggtheme = theme_bw(), line.size = 0.1,
+    facet.by = "rounded_DOL") +
+  stat_compare_means(paired = TRUE) 
+```
+
+```{r}
+DOL_bac_pair_wilcox_dt <- DOL_bac_pair_subj_wide %>% 
+  group_by(rounded_DOL) %>%
+  do(w = wilcox.test(.$Yes, .$No, data=., paired=TRUE)) %>% 
+       summarise(rounded_DOL, 
+                 Wilcox = w$p.value,
+                 aster = case_when(Wilcox < 0.0001 ~ "****",
+                                   Wilcox < 0.001 ~ "***", 
+                                   Wilcox < 0.01 ~ "**",
+                                   Wilcox < 0.05 ~ "*",
+                                   TRUE ~ "ns"))
+
+DOL_bac_pair_wil_dt <- merge(DOL_bac_pair_dt, DOL_bac_pair_wilcox_dt, by = "rounded_DOL")
+```
+
+```{r}
+DOL_bac_pair_wil_dt %>%
+  group_by(rounded_DOL,pair_num) %>%
+  filter(n() == 2) %>%
+  ggplot(aes(T1D, average_bray)) +
+  geom_boxplot(aes(fill = T1D), outlier.shape = NA, alpha = 0.6) +
+  geom_point(color="grey20", alpha = 0.5, stroke = 0, size = 0.8) +
+  geom_line(aes(group = pair_num), color = "lightgrey", alpha = 0.3) +
+  geom_text(data = DOL_bac_pair_wilcox_dt, aes(label = aster), x = "No", y = 1.05) +
+  scale_fill_manual(values=c("#8CBEB1", "orangered")) +
+  ylim(c(NA, 1.1)) +
+  facet_wrap(vars(rounded_DOL), nrow = 1) +
+  theme_bw() +
+  theme(legend.position = "bottom", 
+        axis.text.x = element_blank()) +
+  labs(x = "day of life (rounded)", 
+       y = "Bray-Curtis Distance\nto Follow-up Sample",
+       title="bacteria SGBs")
+
+ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_dayoflife_bray_curtis_NCC_paired.pdf", find_rstudio_root_file()), 
+                 width = 6, height = 3.5)  
+```
+
+
+
 
 
 
