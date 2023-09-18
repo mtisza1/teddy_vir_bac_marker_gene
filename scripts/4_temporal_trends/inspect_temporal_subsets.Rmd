@@ -58,12 +58,22 @@ bac_sub_sum_dt <- only_bac_subs_dt %>%
 ```
 inspect abundant bacteria in each group
 ```{r}
-bac_sub_sum_dt %>% 
-  filter(assignment == "Subset 6") %>%
-  arrange(desc(avg_rel_abundance * detections))
+sup_tab_dt <- bac_sub_sum_dt %>% 
+  group_by(assignment) %>%
+  top_n(5, (detections*avg_rel_abundance)) %>%
+  arrange(assignment) %>%
+  mutate(species = gsub("s__", "", species),
+         species = gsub("\\|t__", ", ", species),
+         species = gsub("_", " ", species))
 ```
 
 
+```{r}
+write.table(sup_tab_dt,
+            file = sprintf("%s/intermediate_files/top_bacteria_temp_subsets1.tsv", 
+                           find_rstudio_root_file()),
+            sep = "\t", row.names = F, quote = F)
+```
 
 
 
