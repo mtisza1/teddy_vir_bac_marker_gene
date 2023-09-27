@@ -16,14 +16,16 @@ library(rprojroot)
 set paths and filenames
 ```{r}
 ### files
-long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
-metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
 
 ```
 
 load long table and metadata, merge 
 ```{r}
-long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+long_dt <- fread(long_table, sep = "\t", header = T) %>%
   select(sampleID, rel_abundance, lineage) %>%
   mutate(kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
                              grepl("k__Vir", lineage) ~ "Virus",
@@ -31,7 +33,7 @@ long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
                              grepl("k__Euk", lineage) ~ "Eukaryota",
                              TRUE ~ "other"))
 
-meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+meta_dt <- fread(metadata_table, sep = ",", header = T) %>%
   select(-V1)
 
 merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
@@ -53,10 +55,16 @@ group_dt %>%
   filter(kingdom == "Virus" | kingdom == "Bacteria") %>%
   ggplot() + 
   geom_freqpoly(aes(n_subjects, color=kingdom), alpha=0.9, size=2, bins = 20) + 
-  geom_rug(data = group_dt %>% filter(kingdom == "Virus"), aes(n_subjects, color=kingdom), alpha=0.2, outside = T) + 
-  geom_rug(data = group_dt %>% filter(kingdom == "Bacteria"), aes(n_subjects, color=kingdom), alpha=0.2, outside = F) + 
-  scale_colour_manual(name = '', values =c('Bacteria'='#F2AD00','Virus'='#5BBCD6'), labels = c('bacteria SGB','virus SGB')) +
-  scale_y_continuous(trans="log", breaks = c(1, 10, 100, 1000, 10000), labels = c(1, 10, 100, 1000, "10,000")) + 
+  geom_rug(data = group_dt %>% filter(kingdom == "Virus"), 
+           aes(n_subjects, color=kingdom), alpha=0.2, outside = T) + 
+  geom_rug(data = group_dt %>% filter(kingdom == "Bacteria"), 
+           aes(n_subjects, color=kingdom), alpha=0.2, outside = F) + 
+  scale_colour_manual(name = '', 
+                      values =c('Bacteria'='#F2AD00','Virus'='#5BBCD6'), 
+                      labels = c('bacteria SGB','virus SGB')) +
+  scale_y_continuous(trans="log", 
+                     breaks = c(1, 10, 100, 1000, 10000), 
+                     labels = c(1, 10, 100, 1000, "10,000")) + 
   coord_cartesian(clip = "off") +
   theme_bw() +
   xlim(0, 900) +

@@ -21,8 +21,10 @@ library(cowplot)
 set paths and filenames
 ```{r}
 ### files
-long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
-metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
 
 ```
 
@@ -83,7 +85,7 @@ bray_long <- melt(setDT(bray_curtis_df),
 bray_long$kingdom <- "Virus"
 ```
 
-whole subject bacteriom bray-curtis
+whole subject bacteriome bray-curtis
 ```{r}
 wide_bacteriome_dt <- merge_dt %>%
   filter(kingdom == "Bacteria") %>%
@@ -137,7 +139,9 @@ rbind(bray_long, bac_bray_long) %>%
   xlab("") + 
   ylab("Bray-Curtis Distance\nBetween Subjects") + 
   scale_fill_manual(values=c("#F2AD00", "#5BBCD6")) +
-  stat_pvalue_manual(stat.test_kingdom, label = "p.signif", y.position=1.05, tip.length = 0.01) +
+  stat_pvalue_manual(stat.test_kingdom, 
+                     label = "p.signif", 
+                     y.position=1.05, tip.length = 0.01) +
   theme(axis.text.x = element_text(angle = 90, hjust=0.8), legend.position = "Off")
 
 ggsave(sprintf("%s/charts/bacteria_vs_virus_whole_subject_bray_dist.pdf", find_rstudio_root_file()), width = 3, height = 3)

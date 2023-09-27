@@ -23,10 +23,13 @@ set paths and filenames
 
 ```{r}
 ### files
-long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
-metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
 
-T1D_groups_file=sprintf("%s/data/MP142_CASE_CNTRL_T1D_LIST1.csv", find_rstudio_root_file())
+T1D_groups_file=sprintf("%s/data/MP142_CASE_CNTRL_T1D_LIST1.csv", 
+                        find_rstudio_root_file())
 
 ```
 
@@ -66,8 +69,11 @@ mask_id_list <- as.list(
   merge_dt %>% distinct(mask_id)
 )
 
-big_bray_long <- data.table(sample_info1=character(), sample_info2=character(), value=numeric())
+big_bray_long <- data.table(sample_info1=character(), 
+                            sample_info2=character(), 
+                            value=numeric())
 
+## big for loop to do each subject
 for (subjectq in mask_id_list[1]$mask_id) {
   temp_long_dt <- merge_dt %>%
     filter(mask_id == subjectq)
@@ -143,7 +149,8 @@ vir_next_bray_dt <- big_bray_long %>%
   group_by(sampleID1) %>%
   filter(days_apart == min(days_apart))
 
-vir_next_bray_dt <- merge(vir_next_bray_dt, meta_dt, by.x = "sampleID1", by.y = "sample")
+vir_next_bray_dt <- merge(vir_next_bray_dt, meta_dt, 
+                          by.x = "sampleID1", by.y = "sample")
 
 ## add groups
 vir_next_bray_dt <- merge(vir_next_bray_dt, groups_dt, by = "mask_id")
@@ -159,6 +166,7 @@ vir_bray_sum_subj <- vir_next_bray_dt %>%
             pair_num = case_ind) %>%
   ungroup() %>%
   distinct() %>%
+  ## I think there is a typo in group 114
   filter(!pair_num == 114)
 ```
 
@@ -181,10 +189,12 @@ vir_bray_subj_wide %>%
   
 ```
 
+paired wilcox test
 ```{r}
 wilcox.test(vir_bray_subj_wide$Yes, vir_bray_subj_wide$No, paired = TRUE)
 
 ```
+
 ```{r}
 vir_bray_sum_subj %>%
   group_by(pair_num) %>%
@@ -211,7 +221,8 @@ vir_bray_sum_subj  %>%
   labs(y = "Bray-Curtis Distance\nto Follow-up Sample",
        title="virus SGBs")
 
-ggsave(file = sprintf("%s/charts/virome_bray_curtis_T1D_NCC_paired.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/virome_bray_curtis_T1D_NCC_paired.pdf",
+                      find_rstudio_root_file()), 
                  width = 2.5, height = 3.5)  
 ```
 
@@ -240,7 +251,8 @@ DOL_vir_pair_subj_wide <- DOL_vir_pair_dt %>%
   group_by(pair_num, rounded_DOL) %>%
   filter(n() == 2) %>%
   ungroup() %>%
-  pivot_wider(id_cols = c(pair_num, rounded_DOL), names_from = T1D, values_from = average_bray)
+  pivot_wider(id_cols = c(pair_num, rounded_DOL), names_from = T1D, 
+              values_from = average_bray)
 ```
 
 ```{r}
@@ -286,7 +298,8 @@ DOL_vir_pair_wil_dt %>%
        y = "Bray-Curtis Distance\nto Follow-up Sample",
        title="virus SGBs")
 
-ggsave(file = sprintf("%s/charts/virome_T1D_and_dayoflife_bray_curtis_NCC_paired.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/virome_T1D_and_dayoflife_bray_curtis_NCC_paired.pdf",
+                      find_rstudio_root_file()), 
                  width = 6, height = 3.5)  
 ```
 
@@ -301,7 +314,9 @@ mask_id_list <- as.list(
   merge_dt %>% distinct(mask_id)
 )
 
-bac_bray_long <- data.table(sample_info1=character(), sample_info2=character(), value=numeric())
+bac_bray_long <- data.table(sample_info1=character(), 
+                            sample_info2=character(), 
+                            value=numeric())
 
 for (subjectq in mask_id_list[1]$mask_id) {
   temp_long_dt <- merge_dt %>%
@@ -441,7 +456,8 @@ bac_bray_sum_subj %>%
   labs(y = "Bray-Curtis Distance\nto Follow-up Sample",
        title="bacteria SGBs")
 
-ggsave(file = sprintf("%s/charts/bacteriome_bray_curtis_T1D_NCC_paired.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/bacteriome_bray_curtis_T1D_NCC_paired.pdf",
+                      find_rstudio_root_file()), 
                  width = 2.5, height = 3.5)  
 ```
 
@@ -514,7 +530,8 @@ DOL_bac_pair_wil_dt %>%
        y = "Bray-Curtis Distance\nto Follow-up Sample",
        title="bacteria SGBs")
 
-ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_dayoflife_bray_curtis_NCC_paired.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/bacteriome_T1D_and_dayoflife_bray_curtis_NCC_paired.pdf",
+                      find_rstudio_root_file()), 
                  width = 6, height = 3.5)  
 ```
 

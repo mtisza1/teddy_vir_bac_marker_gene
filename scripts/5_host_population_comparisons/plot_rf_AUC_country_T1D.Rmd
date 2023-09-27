@@ -28,7 +28,10 @@ if (exists("auc_dataset")){
   rm(auc_dataset)
 }
 
-file_list <- Sys.glob(sprintf("%s/intermediate_files/random_forest_outputs/rf_ROC_AUC_*_groups.tsv", find_rstudio_root_file()))
+file_list <- Sys.glob(
+  sprintf("%s/intermediate_files/random_forest_outputs/rf_ROC_AUC_*_groups.tsv",
+          find_rstudio_root_file()))
+
 for (file in file_list){
       
   # if the merged dataset doesn't exist, create it
@@ -91,7 +94,10 @@ combine plots
 ```{r}
 xp <- plot_grid(country_p, T1D_p, align = "h", nrow = 1, rel_widths = c(70/100, 30/100))
 xp
-ggsave(xp, file = sprintf("%s/charts/rf_AUC_plots_all_types1.pdf", find_rstudio_root_file()), width = 8, height = 5)
+ggsave(xp, 
+       file = sprintf("%s/charts/rf_AUC_plots_all_types1.pdf", 
+                      find_rstudio_root_file()), 
+       width = 8, height = 5)
 
 ```
 

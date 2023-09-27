@@ -20,17 +20,21 @@ set paths and filenames
 
 ```{r}
 ### files
-long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
-metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
-iphop_table=sprintf("%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv", find_rstudio_root_file())
-taxonomy_table=sprintf("%s/data/TGVG_database_v1.1.VC_taxonomy_table.csv", find_rstudio_root_file())
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
+iphop_table=sprintf("%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv",
+                    find_rstudio_root_file())
+taxonomy_table=sprintf("%s/data/TGVG_database_v1.1.VC_taxonomy_table.csv",
+                       find_rstudio_root_file())
 
 ```
 
 load long table and metadata, merge
 
 ```{r}
-long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+long_dt <- fread(long_table, sep = "\t", header = T) %>%
   select(sampleID, rel_abundance, lineage) %>%
   mutate(sampleID = as.character(sampleID),
          kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
@@ -39,7 +43,7 @@ long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
                              grepl("k__Euk", lineage) ~ "Eukaryota",
                              TRUE ~ "other"))
 
-meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+meta_dt <- fread(metadata_table, sep = ",", header = T) %>%
   select(-V1) %>%
   mutate(sample = as.character(sample)) %>%
   group_by(mask_id) %>%
@@ -52,11 +56,13 @@ merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
 
 load iphop host prediction table
 ```{r}
-iphop_dt <- fread(sprintf("%s", iphop_table), sep = ",", header = T, col.names = c("name", "AAI", "host_lineage", "confidence", "methods")) %>%
+iphop_dt <- fread(iphop_table, sep = ",", header = T, 
+                  col.names = c("name", "AAI", "host_lineage", 
+                                "confidence", "methods")) %>%
   mutate(host_genus = gsub(".*g__","g__", host_lineage),
          host_family = gsub(";g__.*","", host_lineage))
 
-tax_dt <- fread(sprintf("%s", taxonomy_table), sep = ",", header = T) %>%
+tax_dt <- fread(taxonomy_table, sep = ",", header = T) %>%
   select(c(name, Species))
 
 iphop_tax_dt <- merge(iphop_dt, tax_dt, by = "name") %>%
@@ -77,6 +83,8 @@ subject  analysis
 
 get specific table for subject
 ```{r}
+
+## choose a subject ID here from the above list
 subject <- 437219
 sub_total_dt <- merge_dt %>%
   filter(mask_id == subject) %>%
@@ -97,6 +105,7 @@ sub_total_dt %>%
 
 Plot a genus
 ```{r}
+## choose a genus here from the above list
 genus <- "Enterocloster"
 
 bac_select_sub <- sub_total_dt %>%
@@ -197,8 +206,18 @@ combp
 
 save
 ```{r}
-ggsave(combp, file = sprintf("%s/charts/subject_phage-bacteria/%s_%s_age_dotplot.pdf", find_rstudio_root_file(), subject, genus), width = 6, height = 3.5)
+ggsave(combp, 
+       file = sprintf("%s/charts/subject_phage-bacteria/%s_%s_age_dotplot.pdf",
+                      find_rstudio_root_file(), subject, genus), 
+       width = 6, height = 3.5)
 ```
+
+
+
+
+
+###############################################
+These are alternative plots I was considering:
 
 
 back to geom_col
@@ -339,5 +358,7 @@ save
 ```{r}
 ggsave(alljit_p, file = sprintf("%s/charts/subject_phage-bacteria/%s_%s_age_alluvialplot.pdf", find_rstudio_root_file(), subject, genus), width = 8, height = 3.2)
 ```
+
+###############################################
 
 

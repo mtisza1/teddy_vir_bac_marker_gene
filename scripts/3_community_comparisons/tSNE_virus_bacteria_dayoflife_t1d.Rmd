@@ -20,8 +20,10 @@ library(cowplot)
 set paths and filenames
 ```{r}
 ### files
-long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
-metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
 
 ```
 
@@ -95,7 +97,8 @@ bac_dayp <- embb_bac_meta_dt %>%
   ggplot(aes(x=V1, y=V2, color=age_days, shape = Country)) +
   geom_point(size = 1.3, alpha = 0.5) +
   scale_color_gradient2(low = "maroon", mid = "grey", high = "#3F3F7B", 
-                        midpoint = 500, limits = c(0,1400), na.value = "black", name = "Day of Life") +
+                        midpoint = 500, limits = c(0,1400), 
+                        na.value = "black", name = "Day of Life") +
   scale_shape_manual(values=c(15, 16, 17, 18)) +
   theme_bw() +
   labs(x = "tSNE-1", y = "tSNE-2", title = "tSNE of Bacteria in TEDDY samples")
@@ -141,7 +144,8 @@ vir_dayp <- embb_vir_meta_dt %>%
   ggplot(aes(x=V1, y=V2, color=age_days, shape = Country)) +
   geom_point(size = 1.3, alpha = 0.5) +
   scale_color_gradient2(low = "maroon", mid = "grey", high = "#3F3F7B", 
-                        midpoint = 500, limits = c(0,1400), na.value = "black", name = "Day of Life") +
+                        midpoint = 500, limits = c(0,1400), 
+                        na.value = "black", name = "Day of Life") +
   scale_shape_manual(values=c(15, 16, 17, 18)) +
   theme_bw() +
   labs(x = "tSNE-1", y = "tSNE-2", title = "tSNE of Viruses in TEDDY samples")
@@ -163,7 +167,9 @@ combine and save
 ```{r}
 tSNE_combp <- plot_grid(bac_dayp, bac_T1Dp, vir_dayp, vir_T1Dp, align = "h", nrow = 2)
 
-ggsave(tSNE_combp, file = sprintf("%s/charts/tSNE_bacteria_vs_virus_all_samples.pdf", find_rstudio_root_file()), width = 8, height = 8)
+ggsave(tSNE_combp, file = sprintf("%s/charts/tSNE_bacteria_vs_virus_all_samples.pdf",
+                                  find_rstudio_root_file()), 
+       width = 8, height = 8)
 
 ```
 

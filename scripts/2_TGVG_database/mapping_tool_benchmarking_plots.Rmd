@@ -51,7 +51,7 @@ F1p <- F1_dt %>%
   scale_color_manual(values=c("#F2AD00", "#5BBCD6")) +
   theme_bw() +
   labs(x= "simulated average genome coverage", y = "F1 Score", 
-       title="SGB Detection Benchmark\nfor Scrounging Around")
+       title="SGB Detection Benchmark\nfor Marker MAGu")
 
 F1p
 

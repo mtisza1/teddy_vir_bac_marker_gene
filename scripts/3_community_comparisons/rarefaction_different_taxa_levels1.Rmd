@@ -18,8 +18,10 @@ library(micropan)
 set paths and filenames
 ```{r}
 ### files
-long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
-metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
 
 ```
 
@@ -27,14 +29,15 @@ load long table and metadata, merge
 ```{r}
 ## make columns for species and genus
 long_dt <- 
-  fread(sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file()), 
-        sep = "\t", header = T) %>%
-  mutate(species = gsub(".*s__","s__", lineage ), genus = gsub(".*g__","g__", lineage ), kingdom = gsub("\\|.*", "", lineage)) %>%
+  fread(long_table, sep = "\t", header = T) %>%
+  mutate(species = gsub(".*s__","s__", lineage ), 
+         genus = gsub(".*g__","g__", lineage ), 
+         kingdom = gsub("\\|.*", "", lineage)) %>%
   mutate(genus = gsub("\\|s__.*", "", genus)) %>%
   ## filter out columns not being kept for wide form
   subset(select = c("rel_abundance", "sampleID", "species", "genus", "kingdom"))
 
-meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+meta_dt <- fread(metadata_table, sep = ",", header = T) %>%
   select(-V1)
 
 
@@ -58,7 +61,8 @@ rarefaction: virus species by subject
 ## make wideform
 wide_vir_sp_dt <- detect_dt %>%
   select(-genus) %>%
-  pivot_wider(names_from = mask_id, values_from = samples_detected, values_fill = 0) %>%
+  pivot_wider(names_from = mask_id, values_from = samples_detected, 
+              values_fill = 0) %>%
   filter(kingdom == "k__Viruses") %>%
   select(-kingdom)
 
@@ -82,7 +86,8 @@ rarefaction: bacteria species by subject
 ## make wideform
 wide_bac_sp_dt <- detect_dt %>%
   select(-genus) %>%
-  pivot_wider(names_from = mask_id, values_from = samples_detected, values_fill = 0) %>%
+  pivot_wider(names_from = mask_id, values_from = samples_detected, 
+              values_fill = 0) %>%
   filter(kingdom == "k__Bacteria") %>%
   select(-kingdom)
 
@@ -109,7 +114,8 @@ wide_vir_ge_dt <- detect_dt %>%
   mutate(samples_detected = sum(samples_detected)) %>%
   distinct() %>%
   ungroup() %>%
-  pivot_wider(names_from = mask_id, values_from = samples_detected, values_fill = 0) %>%
+  pivot_wider(names_from = mask_id, values_from = samples_detected, 
+              values_fill = 0) %>%
   filter(kingdom == "k__Viruses") %>%
   select(-kingdom)
 
@@ -136,7 +142,8 @@ wide_bac_ge_dt <- detect_dt %>%
   mutate(samples_detected = sum(samples_detected)) %>%
   distinct() %>%
   ungroup() %>%
-  pivot_wider(names_from = mask_id, values_from = samples_detected, values_fill = 0) %>%
+  pivot_wider(names_from = mask_id, values_from = samples_detected, 
+              values_fill = 0) %>%
   filter(kingdom == "k__Bacteria") %>%
   select(-kingdom)
 

@@ -1,0 +1,163 @@
+---
+title: "Make completeness (checkv) plot, putative bacteria host (iphop) plot, and virulence (bacphlip) plot"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(rprojroot)
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(wesanderson)
+library(dplyr)
+library(cowplot)
+library(ggridges)
+```
+
+set paths and filenames
+```{r}
+### files
+iphop_genus_table <- sprintf(
+  "%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv", 
+  find_rstudio_root_file())
+
+checkv_completeness <- sprintf(
+  "%s/data/TGVG_database_v1.1.checkv_completeness.tsv", 
+  find_rstudio_root_file())
+
+tax_table <- sprintf(
+  "%s/data/TGVG_database_v1.1.VC_taxonomy_table.csv", 
+  find_rstudio_root_file())
+
+bacphlip_table <- sprintf(
+  "%s/data/TGVG_database_v1.1.exemplars.bacphlip.tsv", 
+  find_rstudio_root_file())
+```
+
+completeness histogram and length distribution violin
+```{r}
+checkv_dt <- fread(checkv_completeness, header = TRUE, sep = "\t")
+checkv_dt$type <- "vOTUs"
+colnames(checkv_dt)
+
+compp <- ggplot(checkv_dt, aes(aai_completeness)) + 
+  geom_histogram(fill="#7887A4") +
+  ylim(0, 40000) +
+  theme_bw() +
+  xlab("Estimated Completeness Percent") +
+  scale_y_continuous(label=scales::comma)
+
+
+
+lengthp <- ggplot(checkv_dt, aes(type, contig_length)) + 
+  geom_violin(fill="#9B6981") +
+  xlab("") +
+  ylab("Contig Length") +
+  scale_y_continuous(trans="log2", breaks = c(4000, 16000, 40000, 120000), 
+                     labels = c("4,000", "16,000", "40,000", "120,000")) +
+  theme_bw()
+
+xp <- plot_grid(compp, lengthp, align = "h", nrow = 1, rel_widths = c(60/100, 40/100))
+xp
+ggsave(sprintf("%s/charts/TGVG_completeness_length1.pdf", 
+               find_rstudio_root_file()), 
+       width = 5, height = 4)
+
+```
+
+
+bacterial host per iphop
+```{r}
+iphop_dt <- fread(iphop_genus_table, header = TRUE, sep = ",")
+
+colnames(iphop_dt) <- c("name", "rafah", "host_genus", "confidence", "methods")
+
+tax_hier <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus")
+iphop_taxmat <- iphop_dt %>% 
+  tidyr::separate(col = host_genus, sep = ";", into = tax_hier, remove = FALSE)
+
+
+vOTU_names_dt <- fread(tax_table, header = TRUE, sep = ",", select = "name")
+
+full_db_tax <- merge(vOTU_names_dt, iphop_taxmat, by = "name", all.x = TRUE)
+
+full_db_tax$Class <- with(
+  full_db_tax, 
+  ave(Class, Class, FUN = function(i) replace(i, length(i) < 300, 'X_Other'))
+  )
+
+full_db_class_count <- full_db_tax %>% count(Class) 
+full_db_class_count$Class<-gsub("c__","",as.character(full_db_class_count$Class))
+
+pal <- wes_palette("Rushmore1", 16, type = "continuous")
+ggplot(full_db_class_count, aes(Class, n)) +
+  geom_col(aes(fill=Class), colour="grey30") +
+  scale_fill_manual(values = pal) +
+  theme_bw() +
+  xlab("Putative Host Class") +
+  ylab("") +
+  scale_y_continuous(label=scales::comma) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(sprintf("%s/charts/TGVG_iphop_host1.pdf", find_rstudio_root_file()), 
+       width = 6, height = 6)
+
+big_classes <- as.list(full_db_class_count$Class)
+```
+
+virulent/temperate chart for genomes predicted to be >90% complete
+```{r}
+checkv_dt <- fread(checkv_completeness, header = TRUE, sep = "\t")
+
+bacphlip_dt <- fread(bacphlip_table, header = TRUE, sep = "\t")
+
+colnames(bacphlip_dt) <- c("contig_id", "Virulent", "Temperate")
+
+bacphlip_dt <- subset(bacphlip_dt, select = c("contig_id", "Virulent"))
+
+checkv_dt <- subset(checkv_dt, select = c("contig_id", "aai_completeness"))
+
+bac_complete_dt <- merge(bacphlip_dt, checkv_dt, by = "contig_id") %>% 
+  filter(aai_completeness >= 90)
+
+iphop_dt <- fread(iphop_genus_table, header = TRUE, sep = ",")
+
+colnames(iphop_dt) <- c("contig_id", "rafah", "host_genus", "confidence", "methods")
+
+tax_hier <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus")
+iphop_taxmat <- iphop_dt %>% 
+  tidyr::separate(col = host_genus, sep = ";", into = tax_hier, remove = FALSE)
+
+host_virulent_dt <- merge(bac_complete_dt, iphop_taxmat, 
+                          by = "contig_id", all.x = T)
+
+host_virulent_dt$Class<-gsub("c__","",as.character(host_virulent_dt$Class))
+
+host_virulent_dt <- transform(host_virulent_dt, 
+                              Class=replace(Class, 
+                                            !(Class %in% big_classes), 
+                                            'X_Other'))
+
+
+pal <- wes_palette("Rushmore1", 16, type = "continuous")
+
+ggplot(host_virulent_dt, 
+       aes(Virulent, Class, fill=Class, group=Class, height = ..density..)) + 
+  geom_density_ridges(stat = "binline", bins = 50, 
+                      scale =3, alpha = 0.8, colour="grey30") +
+  scale_fill_manual(values = pal) +
+  coord_cartesian(clip = "off") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  theme_ridges() 
+
+ggsave(sprintf("%s/charts/TGVG_bacphlip_virulent_by_host1.pdf", 
+               find_rstudio_root_file()), 
+       width = 7, height = 5)
+
+     
+```
+
+
+
+

@@ -19,26 +19,32 @@ library(cowplot)
 set paths and filenames
 ```{r}
 ### files
-long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
-metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
-crassvirales_table=sprintf("%s/data/TGVG_database_v1.1.crassvirales_tbl.tsv", find_rstudio_root_file())
-taxonomy_table=sprintf("%s/data/TGVG_database_v1.1.VC_taxonomy_table.csv", find_rstudio_root_file())
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
+crassvirales_table=sprintf("%s/data/TGVG_database_v1.1.crassvirales_tbl.tsv",
+                           find_rstudio_root_file())
+taxonomy_table=sprintf("%s/data/TGVG_database_v1.1.VC_taxonomy_table.csv",
+                       find_rstudio_root_file())
 
 ```
 
 load tables and filter to crassvirales
 ```{r}
-long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+long_dt <- fread(long_table, sep = "\t", header = T) %>%
   mutate(species = gsub(".*s__","s__", lineage),
          sampleID = as.character(sampleID)) %>%
   ## filter out columns not being kept for wide form
   subset(select = c("rel_abundance", "sampleID", "species"))
 
-tax_dt <- fread(sprintf("%s", taxonomy_table), sep = ",", header = T)
+tax_dt <- fread(taxonomy_table, sep = ",", header = T)
 
-crass_names_dt <- fread(sprintf("%s", crassvirales_table), sep = "\t", header = F, col.names = c("name", "crass_category"))
+crass_names_dt <- fread(crassvirales_table, 
+                        sep = "\t", header = F, 
+                        col.names = c("name", "crass_category"))
 
-meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+meta_dt <- fread(metadata_table, sep = ",", header = T) %>%
   select(-V1) %>%
   mutate(sample = as.character(sample))
 
@@ -93,9 +99,11 @@ prevp <- crass_meta_dt %>%
   summarize(crass_samples = sum(crass_rel_abundance > 0),
             total_samples = n()) %>%
   ungroup() %>%
-  ggplot(aes(x = rounded_DOL, y = (crass_samples/total_samples), fill = total_samples)) +
+  ggplot(aes(x = rounded_DOL, y = (crass_samples/total_samples), 
+             fill = total_samples)) +
   geom_col() +
-  scale_fill_gradient(low = "#F5D2E6", high = "#EB8D43", na.value = NA, name = "Total\nSamples") +
+  scale_fill_gradient(low = "#F5D2E6", high = "#EB8D43", 
+                      na.value = NA, name = "Total\nSamples") +
   ylim(0,NA) +
   theme_bw() +
   labs(y="Prevalence of Crassvirales", x="Day of Life") +
@@ -107,7 +115,10 @@ combine plots
 ```{r}
 crass_combp <- plot_grid(prevp, abundp, align = "h", nrow = 1)
 crass_combp
-ggsave(crass_combp, file = sprintf("%s/charts/crassvirales_prevalence_and_abundance.pdf", find_rstudio_root_file()), width = 7, height = 5)
+ggsave(crass_combp, 
+       file = sprintf("%s/charts/crassvirales_prevalence_and_abundance.pdf",
+                      find_rstudio_root_file()), 
+       width = 7, height = 5)
 ```
 
 

@@ -1762,42 +1762,12 @@ subsets</h1>
 <p>load libraries</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShnZ3Bsb3QyKVxubGlicmFyeShkYXRhLnRhYmxlKVxuYGBgIn0= -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShnZ3Bsb3QyKVxubGlicmFyeShkYXRhLnRhYmxlKVxubGlicmFyeShzdHJpbmdyKVxubGlicmFyeShkcGx5cilcbmxpYnJhcnkodGlkeXIpXG5saWJyYXJ5KHJwcm9qcm9vdClcbmxpYnJhcnkod2VzYW5kZXJzb24pXG5gYGAifQ== -->
 <pre class="r"><code>library(ggplot2)
-library(data.table)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiUmVnaXN0ZXJlZCBTMyBtZXRob2Qgb3ZlcndyaXR0ZW4gYnkgJ2RhdGEudGFibGUnOlxuICBtZXRob2QgICAgICAgICAgIGZyb21cbiAgcHJpbnQuZGF0YS50YWJsZSAgICAgXG5kYXRhLnRhYmxlIDEuMTQuMiB1c2luZyAxIHRocmVhZHMgKHNlZSA/Z2V0RFR0aHJlYWRzKS4gIExhdGVzdCBuZXdzOiByLWRhdGF0YWJsZS5jb21cbioqKioqKioqKipcblRoaXMgaW5zdGFsbGF0aW9uIG9mIGRhdGEudGFibGUgaGFzIG5vdCBkZXRlY3RlZCBPcGVuTVAgc3VwcG9ydC4gSXQgc2hvdWxkIHN0aWxsIHdvcmsgYnV0IGluIHNpbmdsZS10aHJlYWRlZCBtb2RlLlxuVGhpcyBpcyBhIE1hYy4gUGxlYXNlIHJlYWQgaHR0cHM6Ly9tYWMuci1wcm9qZWN0Lm9yZy9vcGVubXAvLiBQbGVhc2UgZW5nYWdlIHdpdGggQXBwbGUgYW5kIGFzayB0aGVtIGZvciBzdXBwb3J0LiBDaGVjayByLWRhdGF0YWJsZS5jb20gZm9yIHVwZGF0ZXMsIGFuZCBvdXIgTWFjIGluc3RydWN0aW9ucyBoZXJlOiBodHRwczovL2dpdGh1Yi5jb20vUmRhdGF0YWJsZS9kYXRhLnRhYmxlL3dpa2kvSW5zdGFsbGF0aW9uLiBBZnRlciBzZXZlcmFsIHllYXJzIG9mIG1hbnkgcmVwb3J0cyBvZiBpbnN0YWxsYXRpb24gcHJvYmxlbXMgb24gTWFjLCBpdCdzIHRpbWUgdG8gZ2luZ2VybHkgcG9pbnQgb3V0IHRoYXQgdGhlcmUgaGF2ZSBiZWVuIG5vIHNpbWlsYXIgcHJvYmxlbXMgb24gV2luZG93cyBvciBMaW51eC5cbioqKioqKioqKipcbiJ9 -->
-<pre><code>Registered S3 method overwritten by &#39;data.table&#39;:
-  method           from
-  print.data.table     
-data.table 1.14.2 using 1 threads (see ?getDTthreads).  Latest news: r-datatable.com
-**********
-This installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode.
-This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it&#39;s time to gingerly point out that there have been no similar problems on Windows or Linux.
-**********</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShzdHJpbmdyKVxubGlicmFyeShkcGx5cilcbmBgYCJ9 -->
-<pre class="r"><code>library(stringr)
-library(dplyr)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiXG5BdHRhY2hpbmcgcGFja2FnZTog4oCYZHBseXLigJlcblxuVGhlIGZvbGxvd2luZyBvYmplY3RzIGFyZSBtYXNrZWQgZnJvbSDigJhwYWNrYWdlOmRhdGEudGFibGXigJk6XG5cbiAgICBiZXR3ZWVuLCBmaXJzdCwgbGFzdFxuXG5UaGUgZm9sbG93aW5nIG9iamVjdHMgYXJlIG1hc2tlZCBmcm9tIOKAmHBhY2thZ2U6c3RhdHPigJk6XG5cbiAgICBmaWx0ZXIsIGxhZ1xuXG5UaGUgZm9sbG93aW5nIG9iamVjdHMgYXJlIG1hc2tlZCBmcm9tIOKAmHBhY2thZ2U6YmFzZeKAmTpcblxuICAgIGludGVyc2VjdCwgc2V0ZGlmZiwgc2V0ZXF1YWwsIHVuaW9uXG4ifQ== -->
-<pre><code>
-Attaching package: ‘dplyr’
-
-The following objects are masked from ‘package:data.table’:
-
-    between, first, last
-
-The following objects are masked from ‘package:stats’:
-
-    filter, lag
-
-The following objects are masked from ‘package:base’:
-
-    intersect, setdiff, setequal, union</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5cilcbmxpYnJhcnkocnByb2pyb290KVxubGlicmFyeSh3ZXNhbmRlcnNvbilcbmBgYCJ9 -->
-<pre class="r"><code>library(tidyr)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
 library(rprojroot)
 library(wesanderson)</code></pre>
 <!-- rnb-source-end -->
@@ -1806,13 +1776,17 @@ library(wesanderson)</code></pre>
 <p>set paths and filenames</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIGZpbGVzXG5zdWJzZXRfdGFibGU9c3ByaW50ZihcIiVzL2ludGVybWVkaWF0ZV9maWxlcy9wcmV2X1NHQnNfY2x1c3Rlcl9hc3NpZ25tZW50c19sb25nX2FidW5kYW5jZS50c3ZcIiwgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKVxubWV0YWRhdGFfdGFibGU9c3ByaW50ZihcIiVzL2RhdGEvc29tZV90ZWRkeV9NUDE0Ml9tZXRhZGF0YTIuYWxsX3NhbXBsZXMxLmRlbGl2ZXJ5LmNzdlwiLCBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkpXG5pcGhvcF90YWJsZT1zcHJpbnRmKFwiJXMvZGF0YS9UR1ZHX2RhdGFiYXNlX3YxLjEuZXhlbXBsYXJzLmlwaG9wX2dlbnVzX291dHB1dHMxLmZpbHQuY3N2XCIsIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSlcblxubG9uZ190YWJsZT1zcHJpbnRmKFwiJXMvZGF0YS9tcDE0Ml9UR1ZHMS4xX01QQTRfY29tYmluZWRfYWJ1bmRhbmNlX3RhYmxlX2xvbmdmb3JtMS50c3ZcIiwgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKVxuXG5gYGAifQ== -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIGZpbGVzXG5zdWJzZXRfdGFibGU9c3ByaW50ZihcIiVzL2ludGVybWVkaWF0ZV9maWxlcy9wcmV2X1NHQnNfY2x1c3Rlcl9hc3NpZ25tZW50c19sb25nX2FidW5kYW5jZS50c3ZcIixcbiAgICAgICAgICAgICAgICAgICAgIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSlcbm1ldGFkYXRhX3RhYmxlPXNwcmludGYoXCIlcy9kYXRhL3NvbWVfdGVkZHlfTVAxNDJfbWV0YWRhdGEyLmFsbF9zYW1wbGVzMS5kZWxpdmVyeS5jc3ZcIixcbiAgICAgICAgICAgICAgICAgICAgICAgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKVxuaXBob3BfdGFibGU9c3ByaW50ZihcIiVzL2RhdGEvVEdWR19kYXRhYmFzZV92MS4xLmV4ZW1wbGFycy5pcGhvcF9nZW51c19vdXRwdXRzMS5maWx0LmNzdlwiLFxuICAgICAgICAgICAgICAgICAgICBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkpXG5cbmxvbmdfdGFibGU9c3ByaW50ZihcIiVzL2RhdGEvbXAxNDJfVEdWRzEuMV9NUEE0X2NvbWJpbmVkX2FidW5kYW5jZV90YWJsZV9sb25nZm9ybTEudHN2XCIsXG4gICAgICAgICAgICAgICAgICAgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKVxuXG5gYGAifQ== -->
 <pre class="r"><code>### files
-subset_table=sprintf(&quot;%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv&quot;, find_rstudio_root_file())
-metadata_table=sprintf(&quot;%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv&quot;, find_rstudio_root_file())
-iphop_table=sprintf(&quot;%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv&quot;, find_rstudio_root_file())
+subset_table=sprintf(&quot;%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv&quot;,
+                     find_rstudio_root_file())
+metadata_table=sprintf(&quot;%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv&quot;,
+                       find_rstudio_root_file())
+iphop_table=sprintf(&quot;%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv&quot;,
+                    find_rstudio_root_file())
 
-long_table=sprintf(&quot;%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv&quot;, find_rstudio_root_file())
+long_table=sprintf(&quot;%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv&quot;,
+                   find_rstudio_root_file())
 </code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
@@ -1846,18 +1820,13 @@ only_bac_subs_dt &lt;- merge(long_dt, bac_sp_dt, by = &quot;species&quot;)</code
 <p>summarize table to get # of detections and average abundance</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYmFjX3N1Yl9zdW1fZHQgPC0gb25seV9iYWNfc3Vic19kdCAlPiUgXG4gIGdyb3VwX2J5KHNwZWNpZXMsIGFzc2lnbm1lbnQpICU+JVxuICBzdW1tYXJpemUoZGV0ZWN0aW9ucyA9IG4oKSxcbiAgICAgICAgICAgIGF2Z19yZWxfYWJ1bmRhbmNlID0gbWVhbihyZWxfYWJ1bmRhbmNlKSkgJT4lXG4gIGFycmFuZ2UoZGVzYyhkZXRlY3Rpb25zKSlcbmBgYCJ9 -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYmFjX3N1Yl9zdW1fZHQgPC0gb25seV9iYWNfc3Vic19kdCAlPiUgXG4gIGdyb3VwX2J5KHNwZWNpZXMsIGFzc2lnbm1lbnQpICU+JVxuICBzdW1tYXJpemUoZGV0ZWN0aW9ucyA9IG4oKSxcbiAgICAgICAgICAgIGF2Z19yZWxfYWJ1bmRhbmNlID0gbWVhbihyZWxfYWJ1bmRhbmNlKSkgJT4lXG4gIGFycmFuZ2UoZGVzYyhkZXRlY3Rpb25zKSlcbiAgXG5gYGAifQ== -->
 <pre class="r"><code>bac_sub_sum_dt &lt;- only_bac_subs_dt %&gt;% 
   group_by(species, assignment) %&gt;%
   summarize(detections = n(),
             avg_rel_abundance = mean(rel_abundance)) %&gt;%
-  arrange(desc(detections))</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiYHN1bW1hcmlzZSgpYCBoYXMgZ3JvdXBlZCBvdXRwdXQgYnkgJ3NwZWNpZXMnLiBZb3UgY2FuIG92ZXJyaWRlIHVzaW5nIHRoZSBgLmdyb3Vwc2AgYXJndW1lbnQuXG4ifQ== -->
-<pre><code>`summarise()` has grouped output by &#39;species&#39;. You can override using the `.groups` argument.</code></pre>
-<!-- rnb-output-end -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuICBcbmBgYCJ9 -->
-<pre class="r"><code>  </code></pre>
+  arrange(desc(detections))
+  </code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
@@ -1877,11 +1846,17 @@ only_bac_subs_dt &lt;- merge(long_dt, bac_sp_dt, by = &quot;species&quot;)</code
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud3JpdGUudGFibGUoc3VwX3RhYl9kdCxcbiAgICAgICAgICAgIGZpbGUgPSBzcHJpbnRmKFwiJXMvaW50ZXJtZWRpYXRlX2ZpbGVzL3RvcF9iYWN0ZXJpYV90ZW1wX3N1YnNldHMxLnRzdlwiLCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSksXG4gICAgICAgICAgICBzZXAgPSBcIlxcdFwiLCByb3cubmFtZXMgPSBGLCBxdW90ZSA9IEYpXG5gYGAifQ== -->
+<pre class="r"><code>write.table(sup_tab_dt,
+            file = sprintf(&quot;%s/intermediate_files/top_bacteria_temp_subsets1.tsv&quot;, 
+                           find_rstudio_root_file()),
+            sep = &quot;\t&quot;, row.names = F, quote = F)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiSW5zcGVjdCBjb21tb24gYmFjdGVyaWFsIFNHQnMgaW4gdGVtcG9yYWwgc3Vic2V0cyIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKbG9hZCBsaWJyYXJpZXMKYGBge3J9CmxpYnJhcnkoZ2dwbG90MikKbGlicmFyeShkYXRhLnRhYmxlKQpsaWJyYXJ5KHN0cmluZ3IpCmxpYnJhcnkoZHBseXIpCmxpYnJhcnkodGlkeXIpCmxpYnJhcnkocnByb2pyb290KQpsaWJyYXJ5KHdlc2FuZGVyc29uKQpgYGAKCnNldCBwYXRocyBhbmQgZmlsZW5hbWVzCgpgYGB7cn0KIyMjIGZpbGVzCnN1YnNldF90YWJsZT1zcHJpbnRmKCIlcy9pbnRlcm1lZGlhdGVfZmlsZXMvcHJldl9TR0JzX2NsdXN0ZXJfYXNzaWdubWVudHNfbG9uZ19hYnVuZGFuY2UudHN2IiwgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKQptZXRhZGF0YV90YWJsZT1zcHJpbnRmKCIlcy9kYXRhL3NvbWVfdGVkZHlfTVAxNDJfbWV0YWRhdGEyLmFsbF9zYW1wbGVzMS5kZWxpdmVyeS5jc3YiLCBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkpCmlwaG9wX3RhYmxlPXNwcmludGYoIiVzL2RhdGEvVEdWR19kYXRhYmFzZV92MS4xLmV4ZW1wbGFycy5pcGhvcF9nZW51c19vdXRwdXRzMS5maWx0LmNzdiIsIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSkKCmxvbmdfdGFibGU9c3ByaW50ZigiJXMvZGF0YS9tcDE0Ml9UR1ZHMS4xX01QQTRfY29tYmluZWRfYWJ1bmRhbmNlX3RhYmxlX2xvbmdmb3JtMS50c3YiLCBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkpCgpgYGAKCmdldCBiYXNpYyBzdGF0cyBvbiBTR0JzCmBgYHtyfQpzdWJzZXRfZHQgPC0gZnJlYWQoc3Vic2V0X3RhYmxlLCBoZWFkZXIgPSBULCBzZXAgPSAiXHQiKQoKYmFjX3NwX2R0IDwtIHN1YnNldF9kdCAlPiUKICBmaWx0ZXIoa2luZ2RvbSA9PSAiQmFjdGVyaWEiKSAlPiUKICBkaXN0aW5jdChzcGVjaWVzLCBhc3NpZ25tZW50KQogIAoKYGBgCgpnZXQgYWxsIGFidW5kYW5jZSBkYXRhIGFuZCBtZXJnZS9zdWJzZXQgdG8gYXNzaWduZWQgYmFjdGVyaWFsIFNHQnMKCmBgYHtyfQpsb25nX2R0IDwtIGZyZWFkKGxvbmdfdGFibGUsIGhlYWRlciA9IFQsIHNlcCA9ICJcdCIpICU+JQogIG11dGF0ZShzcGVjaWVzID0gZ3N1YigiLipzX18iLCJzX18iLCBsaW5lYWdlICkpCgpvbmx5X2JhY19zdWJzX2R0IDwtIG1lcmdlKGxvbmdfZHQsIGJhY19zcF9kdCwgYnkgPSAic3BlY2llcyIpCmBgYAoKCnN1bW1hcml6ZSB0YWJsZSB0byBnZXQgIyBvZiBkZXRlY3Rpb25zIGFuZCBhdmVyYWdlIGFidW5kYW5jZQpgYGB7cn0KYmFjX3N1Yl9zdW1fZHQgPC0gb25seV9iYWNfc3Vic19kdCAlPiUgCiAgZ3JvdXBfYnkoc3BlY2llcywgYXNzaWdubWVudCkgJT4lCiAgc3VtbWFyaXplKGRldGVjdGlvbnMgPSBuKCksCiAgICAgICAgICAgIGF2Z19yZWxfYWJ1bmRhbmNlID0gbWVhbihyZWxfYWJ1bmRhbmNlKSkgJT4lCiAgYXJyYW5nZShkZXNjKGRldGVjdGlvbnMpKQogIApgYGAKaW5zcGVjdCBhYnVuZGFudCBiYWN0ZXJpYSBpbiBlYWNoIGdyb3VwCmBgYHtyfQpzdXBfdGFiX2R0IDwtIGJhY19zdWJfc3VtX2R0ICU+JSAKICBncm91cF9ieShhc3NpZ25tZW50KSAlPiUKICB0b3Bfbig1LCAoZGV0ZWN0aW9ucyphdmdfcmVsX2FidW5kYW5jZSkpICU+JQogIGFycmFuZ2UoYXNzaWdubWVudCkgJT4lCiAgbXV0YXRlKHNwZWNpZXMgPSBnc3ViKCJzX18iLCAiIiwgc3BlY2llcyksCiAgICAgICAgIHNwZWNpZXMgPSBnc3ViKCJcXHx0X18iLCAiLCAiLCBzcGVjaWVzKSwKICAgICAgICAgc3BlY2llcyA9IGdzdWIoIl8iLCAiICIsIHNwZWNpZXMpKQpgYGAKCgpgYGB7cn0Kd3JpdGUudGFibGUoc3VwX3RhYl9kdCwKICAgICAgICAgICAgZmlsZSA9IHNwcmludGYoIiVzL2ludGVybWVkaWF0ZV9maWxlcy90b3BfYmFjdGVyaWFfdGVtcF9zdWJzZXRzMS50c3YiLCAKICAgICAgICAgICAgICAgICAgICAgICAgICAgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKSwKICAgICAgICAgICAgc2VwID0gIlx0Iiwgcm93Lm5hbWVzID0gRiwgcXVvdGUgPSBGKQpgYGAKCgoK</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiSW5zcGVjdCBjb21tb24gYmFjdGVyaWFsIFNHQnMgaW4gdGVtcG9yYWwgc3Vic2V0cyIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKbG9hZCBsaWJyYXJpZXMKYGBge3J9CmxpYnJhcnkoZ2dwbG90MikKbGlicmFyeShkYXRhLnRhYmxlKQpsaWJyYXJ5KHN0cmluZ3IpCmxpYnJhcnkoZHBseXIpCmxpYnJhcnkodGlkeXIpCmxpYnJhcnkocnByb2pyb290KQpsaWJyYXJ5KHdlc2FuZGVyc29uKQpgYGAKCnNldCBwYXRocyBhbmQgZmlsZW5hbWVzCgpgYGB7cn0KIyMjIGZpbGVzCnN1YnNldF90YWJsZT1zcHJpbnRmKCIlcy9pbnRlcm1lZGlhdGVfZmlsZXMvcHJldl9TR0JzX2NsdXN0ZXJfYXNzaWdubWVudHNfbG9uZ19hYnVuZGFuY2UudHN2IiwKICAgICAgICAgICAgICAgICAgICAgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKQptZXRhZGF0YV90YWJsZT1zcHJpbnRmKCIlcy9kYXRhL3NvbWVfdGVkZHlfTVAxNDJfbWV0YWRhdGEyLmFsbF9zYW1wbGVzMS5kZWxpdmVyeS5jc3YiLAogICAgICAgICAgICAgICAgICAgICAgIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSkKaXBob3BfdGFibGU9c3ByaW50ZigiJXMvZGF0YS9UR1ZHX2RhdGFiYXNlX3YxLjEuZXhlbXBsYXJzLmlwaG9wX2dlbnVzX291dHB1dHMxLmZpbHQuY3N2IiwKICAgICAgICAgICAgICAgICAgICBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkpCgpsb25nX3RhYmxlPXNwcmludGYoIiVzL2RhdGEvbXAxNDJfVEdWRzEuMV9NUEE0X2NvbWJpbmVkX2FidW5kYW5jZV90YWJsZV9sb25nZm9ybTEudHN2IiwKICAgICAgICAgICAgICAgICAgIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSkKCmBgYAoKZ2V0IGJhc2ljIHN0YXRzIG9uIFNHQnMKYGBge3J9CnN1YnNldF9kdCA8LSBmcmVhZChzdWJzZXRfdGFibGUsIGhlYWRlciA9IFQsIHNlcCA9ICJcdCIpCgpiYWNfc3BfZHQgPC0gc3Vic2V0X2R0ICU+JQogIGZpbHRlcihraW5nZG9tID09ICJCYWN0ZXJpYSIpICU+JQogIGRpc3RpbmN0KHNwZWNpZXMsIGFzc2lnbm1lbnQpCiAgCgpgYGAKCmdldCBhbGwgYWJ1bmRhbmNlIGRhdGEgYW5kIG1lcmdlL3N1YnNldCB0byBhc3NpZ25lZCBiYWN0ZXJpYWwgU0dCcwoKYGBge3J9CmxvbmdfZHQgPC0gZnJlYWQobG9uZ190YWJsZSwgaGVhZGVyID0gVCwgc2VwID0gIlx0IikgJT4lCiAgbXV0YXRlKHNwZWNpZXMgPSBnc3ViKCIuKnNfXyIsInNfXyIsIGxpbmVhZ2UgKSkKCm9ubHlfYmFjX3N1YnNfZHQgPC0gbWVyZ2UobG9uZ19kdCwgYmFjX3NwX2R0LCBieSA9ICJzcGVjaWVzIikKYGBgCgoKc3VtbWFyaXplIHRhYmxlIHRvIGdldCAjIG9mIGRldGVjdGlvbnMgYW5kIGF2ZXJhZ2UgYWJ1bmRhbmNlCmBgYHtyfQpiYWNfc3ViX3N1bV9kdCA8LSBvbmx5X2JhY19zdWJzX2R0ICU+JSAKICBncm91cF9ieShzcGVjaWVzLCBhc3NpZ25tZW50KSAlPiUKICBzdW1tYXJpemUoZGV0ZWN0aW9ucyA9IG4oKSwKICAgICAgICAgICAgYXZnX3JlbF9hYnVuZGFuY2UgPSBtZWFuKHJlbF9hYnVuZGFuY2UpKSAlPiUKICBhcnJhbmdlKGRlc2MoZGV0ZWN0aW9ucykpCiAgCmBgYAppbnNwZWN0IGFidW5kYW50IGJhY3RlcmlhIGluIGVhY2ggZ3JvdXAKYGBge3J9CnN1cF90YWJfZHQgPC0gYmFjX3N1Yl9zdW1fZHQgJT4lIAogIGdyb3VwX2J5KGFzc2lnbm1lbnQpICU+JQogIHRvcF9uKDUsIChkZXRlY3Rpb25zKmF2Z19yZWxfYWJ1bmRhbmNlKSkgJT4lCiAgYXJyYW5nZShhc3NpZ25tZW50KSAlPiUKICBtdXRhdGUoc3BlY2llcyA9IGdzdWIoInNfXyIsICIiLCBzcGVjaWVzKSwKICAgICAgICAgc3BlY2llcyA9IGdzdWIoIlxcfHRfXyIsICIsICIsIHNwZWNpZXMpLAogICAgICAgICBzcGVjaWVzID0gZ3N1YigiXyIsICIgIiwgc3BlY2llcykpCmBgYAoKCmBgYHtyfQp3cml0ZS50YWJsZShzdXBfdGFiX2R0LAogICAgICAgICAgICBmaWxlID0gc3ByaW50ZigiJXMvaW50ZXJtZWRpYXRlX2ZpbGVzL3RvcF9iYWN0ZXJpYV90ZW1wX3N1YnNldHMxLnRzdiIsIAogICAgICAgICAgICAgICAgICAgICAgICAgICBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkpLAogICAgICAgICAgICBzZXAgPSAiXHQiLCByb3cubmFtZXMgPSBGLCBxdW90ZSA9IEYpCmBgYAoKCgo=</div>
 
 
 

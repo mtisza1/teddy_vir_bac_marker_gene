@@ -18,15 +18,19 @@ library(rprojroot)
 set paths and filenames
 ```{r}
 ### files
-bac_sp_table=sprintf("%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.bacteria_species.wide.tsv", find_rstudio_root_file())
-vir_sp_table=sprintf("%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.virus_species.wide.tsv", find_rstudio_root_file())
-metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+bac_sp_table=sprintf("%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.bacteria_species.wide.tsv", 
+                     find_rstudio_root_file())
+vir_sp_table=sprintf("%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.virus_species.wide.tsv",
+                     find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
 
 ```
 
 run alpha diversity metrics on virus and bacteria SGBs
 ```{r}
-bac_sp_df <- read.delim(sprintf("%s", bac_sp_table), sep="\t", header = TRUE, row.names = 1) %>%
+bac_sp_df <- read.delim(bac_sp_table, sep="\t", 
+                        header = TRUE, row.names = 1) %>%
   t()
 
 sampleIDs_bac_sp <- rownames(bac_sp_df)
@@ -37,9 +41,11 @@ bac_sample_diversity <- cbind(sampleIDs_bac_sp, shannon_d_bac, richness_d_bac)
 bac_sample_diversity <- as.data.table(bac_sample_diversity)
 bac_sample_diversity <- setDT(bac_sample_diversity)
 bac_sample_diversity$type <- "Bacteria"
-colnames(bac_sample_diversity) <- c("SampleID", "Shannon_diversity", "species_richness", "type")
+colnames(bac_sample_diversity) <- c("SampleID", "Shannon_diversity", 
+                                    "species_richness", "type")
 
-vir_sp_df <- read.delim(sprintf("%s", vir_sp_table), sep="\t", header = TRUE, row.names = 1) %>%
+vir_sp_df <- read.delim(vir_sp_table, sep="\t", 
+                        header = TRUE, row.names = 1) %>%
   t()
 
 sampleIDs_vir_sp <- rownames(vir_sp_df)
@@ -50,7 +56,8 @@ vir_sample_diversity <- cbind(sampleIDs_vir_sp, shannon_d_vir, richness_d_vir)
 vir_sample_diversity <- as.data.table(vir_sample_diversity)
 vir_sample_diversity <- setDT(vir_sample_diversity)
 vir_sample_diversity$type <- "Virus"
-colnames(vir_sample_diversity) <- c("SampleID", "Shannon_diversity", "species_richness", "type")
+colnames(vir_sample_diversity) <- c("SampleID", "Shannon_diversity", 
+                                    "species_richness", "type")
 
 comb_sample_diversity <- rbind(bac_sample_diversity, vir_sample_diversity) %>%
   mutate(SampleID = gsub("X", "", SampleID))
@@ -68,7 +75,9 @@ meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
   select(-V1)
 meta_dt$sample <- as.character(meta_dt$sample)
 
-subject_diversity_dt <- merge(comb_sample_diversity, meta_dt, by.x = "SampleID", by.y ="sample")
+
+subject_diversity_dt <- merge(comb_sample_diversity, meta_dt, 
+                              by.x = "SampleID", by.y ="sample")
 
 subject_diversity_dt <- subject_diversity_dt %>%
   group_by(mask_id, type) %>%
@@ -109,11 +118,15 @@ richp <- ggplot(subject_diversity_dt, aes(factor(type), as.numeric(species_richn
   ylab("Avg. SGB Richness") + 
   scale_fill_manual(values=c("#F2AD00", "#5BBCD6")) +
   stat_pvalue_manual(stat.test_rich, label = "p.signif", y.position=150, tip.length = 0.01) +
-  theme(legend.position = "none", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
+  theme(legend.position = "none", 
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) 
 
 combp <- plot_grid(richp, shanp, align = "h", nrow = 1, rel_widths = c(38/100, 62/100))
 
-ggsave(combp, file = sprintf("%s/charts/alpha_diversity_by_subject1.pdf", find_rstudio_root_file()), width = 4, height = 4)
+ggsave(combp, 
+       file = sprintf("%s/charts/alpha_diversity_by_subject1.pdf", 
+                      find_rstudio_root_file()), 
+       width = 4, height = 4)
 ```
 
 format for day of life (rounded to next 100) and country
@@ -121,7 +134,8 @@ format for day of life (rounded to next 100) and country
 ## this functions rounds a number up to the nearest 100
 round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
 
-diversity_meta_dt <- merge(comb_sample_diversity, meta_dt, by.x = "SampleID", by.y ="sample") %>%
+diversity_meta_dt <- merge(comb_sample_diversity, meta_dt, 
+                           by.x = "SampleID", by.y ="sample") %>%
   mutate(rounded_DOL =  round_any(age_days, 100),
          Country = case_when(
            country == 1 ~ "USA",
@@ -143,9 +157,12 @@ diversity_meta_dt %>%
   theme_bw() +
   coord_cartesian(ylim = c(0, 165)) +
   labs(x="day of life (rounded)", y="Species Richness")  +
-  theme(legend.position = "bottom", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  theme(legend.position = "bottom", 
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-ggsave(sprintf("%s/charts/species_richness_by_day_of_life.pdf", find_rstudio_root_file()), width = 4, height = 4)
+ggsave(sprintf("%s/charts/species_richness_by_day_of_life.pdf", 
+               find_rstudio_root_file()), 
+       width = 4, height = 4)
 
 diversity_meta_dt %>%
   filter( rounded_DOL <= 1400) %>%
@@ -155,9 +172,12 @@ diversity_meta_dt %>%
   theme_bw() +
   #coord_cartesian(ylim = c(0, 165)) +
   labs(x="day of life (rounded)", y="Shannon Diversity")  +
-  theme(legend.position = "bottom", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  theme(legend.position = "bottom", 
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-ggsave(sprintf("%s/charts/shannon_diversity_by_day_of_life.pdf", find_rstudio_root_file()), width = 4, height = 4)
+ggsave(sprintf("%s/charts/shannon_diversity_by_day_of_life.pdf", 
+               find_rstudio_root_file()), 
+       width = 4, height = 4)
 
 ```
 
@@ -172,9 +192,12 @@ diversity_meta_dt %>%
   theme_bw() +
   coord_cartesian(ylim = c(0, 165)) +
   labs(x="day of life (rounded)", y="SGB Richness")  +
-  theme(legend.position = "bottom", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  theme(legend.position = "bottom", 
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-ggsave(sprintf("%s/charts/species_richness_by_day_of_life_country.pdf", find_rstudio_root_file()), width = 4, height = 8)
+ggsave(sprintf("%s/charts/species_richness_by_day_of_life_country.pdf",
+               find_rstudio_root_file()), 
+       width = 4, height = 8)
 
 diversity_meta_dt %>%
   filter( rounded_DOL <= 1400) %>%
@@ -184,9 +207,12 @@ diversity_meta_dt %>%
   facet_wrap(vars(type), ncol = 1) +
   theme_bw() +
   labs(x="day of life (rounded)", y="Shannon Diversity")  +
-  theme(legend.position = "bottom", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  theme(legend.position = "bottom", 
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
-ggsave(sprintf("%s/charts/shannon_diversity_by_day_of_life_country.pdf", find_rstudio_root_file()), width = 4, height = 8)
+ggsave(sprintf("%s/charts/shannon_diversity_by_day_of_life_country.pdf",
+               find_rstudio_root_file()), 
+       width = 4, height = 8)
 
 ```
 

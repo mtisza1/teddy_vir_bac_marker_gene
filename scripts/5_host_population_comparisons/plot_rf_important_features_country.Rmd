@@ -21,19 +21,25 @@ library(nationalparkcolors)
 set paths and filenames
 ```{r}
 ### files
-long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
-metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
 
-swe_important=sprintf("%s/intermediate_files/random_forest_outputs/rf_important_all_sp_Sweden_vs_not1_pat_groups.tsv", find_rstudio_root_file())
-fin_important=sprintf("%s/intermediate_files/random_forest_outputs/rf_important_all_sp_Finland_vs_not1_pat_groups.tsv", find_rstudio_root_file())
-ger_important=sprintf("%s/intermediate_files/random_forest_outputs/rf_important_all_sp_Germany_vs_not1_pat_groups.tsv", find_rstudio_root_file())
-usa_important=sprintf("%s/intermediate_files/random_forest_outputs/rf_important_all_sp_USA_vs_not1_pat_groups.tsv", find_rstudio_root_file())
+swe_important=sprintf("%s/intermediate_files/random_forest_outputs/rf_important_all_sp_Sweden_vs_not1_pat_groups.tsv", 
+                      find_rstudio_root_file())
+fin_important=sprintf("%s/intermediate_files/random_forest_outputs/rf_important_all_sp_Finland_vs_not1_pat_groups.tsv", 
+                      find_rstudio_root_file())
+ger_important=sprintf("%s/intermediate_files/random_forest_outputs/rf_important_all_sp_Germany_vs_not1_pat_groups.tsv", 
+                      find_rstudio_root_file())
+usa_important=sprintf("%s/intermediate_files/random_forest_outputs/rf_important_all_sp_USA_vs_not1_pat_groups.tsv",
+                      find_rstudio_root_file())
 
 ```
 
 load long abundance table and metadata table, group abundance by SGBs
 ```{r}
-long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+long_dt <- fread(long_table, sep = "\t", header = T) %>%
   mutate(species = gsub(".*s__","s__", lineage ), 
          genus = gsub(".*g__","g__", lineage ),
          sampleID = as.character(sampleID)) %>%
@@ -46,7 +52,7 @@ long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
   subset(select = c("rel_abundance", "sampleID", "species", "genus", "kingdom"))
 
 
-meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+meta_dt <- fread(metadata_table, sep = ",", header = T) %>%
   select(-V1) %>%
   mutate(Country = case_when(
            country == 1 ~ "USA",
@@ -64,7 +70,7 @@ round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
 
 get Sweden top 12 important features
 ```{r}
-SWE_imp_dt <- fread(sprintf("%s", swe_important), sep = "\t", header = T) %>%
+SWE_imp_dt <- fread(swe_important, sep = "\t", header = T) %>%
   head(n = 12) %>%
   select(-avg_importance)
 
@@ -106,7 +112,7 @@ ggsave(file = sprintf("%s/charts/all_SGBs_SWE_rf_top12_features.pdf", find_rstud
 
 get Finland top 12 important features
 ```{r}
-FIN_imp_dt <- fread(sprintf("%s", fin_important), sep = "\t", header = T) %>%
+FIN_imp_dt <- fread(fin_important, sep = "\t", header = T) %>%
   head(n = 12) %>%
   select(-avg_importance)
 
@@ -142,7 +148,8 @@ FIN_ab_meta_dt %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
         strip.text.x = element_text(size=6))
 
-ggsave(file = sprintf("%s/charts/all_SGBs_FIN_rf_top12_features.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/all_SGBs_FIN_rf_top12_features.pdf",
+                      find_rstudio_root_file()), 
                  width = 8, height = 4)
 ```
 
@@ -184,7 +191,8 @@ GER_ab_meta_dt %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
         strip.text.x = element_text(size=6))
 
-ggsave(file = sprintf("%s/charts/all_SGBs_GER_rf_top12_features.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/all_SGBs_GER_rf_top12_features.pdf",
+                      find_rstudio_root_file()), 
                  width = 8, height = 4)
 ```
 
@@ -226,7 +234,8 @@ USA_ab_meta_dt %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
         strip.text.x = element_text(size=6))
 
-ggsave(file = sprintf("%s/charts/all_SGBs_USA_rf_top12_features.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/all_SGBs_USA_rf_top12_features.pdf",
+                      find_rstudio_root_file()), 
                  width = 8, height = 4)
 ```
 

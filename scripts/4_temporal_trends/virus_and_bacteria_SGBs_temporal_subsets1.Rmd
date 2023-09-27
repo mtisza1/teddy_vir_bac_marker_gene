@@ -21,14 +21,16 @@ library(nationalparkcolors)
 set paths and filenames
 ```{r}
 ### files
-long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv", find_rstudio_root_file())
-metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv", find_rstudio_root_file())
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
 
 ```
 
 load long abundance table and metadata table, group abundance by SGBs
 ```{r}
-long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+long_dt <- fread(long_table, sep = "\t", header = T) %>%
   mutate(species = gsub(".*s__","s__", lineage ), 
          genus = gsub(".*g__","g__", lineage ),
          sampleID = as.character(sampleID)) %>%
@@ -42,7 +44,7 @@ long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
 
 prev_ab_dt <- long_dt %>%
   group_by(species) %>%
-  ## 12,262 samples in TEDDY dataset, filter at 1%
+  ## filter at 100 samples minimum
   filter(n_distinct(sampleID) >= 100) %>%
   ungroup()
 
@@ -50,7 +52,7 @@ dim(
   prev_ab_dt %>% distinct(species)
 )
 
-meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+meta_dt <- fread(metadata_table, sep = ",", header = T) %>%
   select(-V1)
 
 ## this functions rounds a number up to the nearest 100
@@ -121,6 +123,7 @@ prev_modeled_dt %>%
   group_by(assignment) %>%
   summarize(n = n())
 
+## manual relabel based on peak rel abundance
 prev_modeled_dt <- prev_modeled_dt %>% 
   mutate(across('assignment', str_replace, 'C', 'Subset 4'))  %>% 
   mutate(across('assignment', str_replace, 'F', 'Subset 2')) %>%
@@ -181,8 +184,13 @@ linesp <- prev_modeled_dt %>%
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         legend.position = "Off")
+
 linesp
-ggsave(linesp, file = sprintf("%s/charts/virus_species_temporal_subsets_lines1.pdf", find_rstudio_root_file()), width = 6, height = 4)
+
+ggsave(linesp, 
+       file = sprintf("%s/charts/virus_species_temporal_subsets_lines1.pdf",
+                      find_rstudio_root_file()), 
+       width = 6, height = 4)
 
 barsp <- prev_modeled_dt %>%
   filter(kingdom == "Virus") %>%
@@ -194,8 +202,13 @@ barsp <- prev_modeled_dt %>%
   labs(y = "Virus SGBs in Subset") +
   theme_bw() +
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
 barsp
-ggsave(barsp, file = sprintf("%s/charts/virus_species_temporal_subsets_size1.pdf", find_rstudio_root_file()), width = 3, height = 3)
+
+ggsave(barsp, 
+       file = sprintf("%s/charts/virus_species_temporal_subsets_size1.pdf",
+                      find_rstudio_root_file()), 
+       width = 3, height = 3)
 
 ```
 
@@ -220,8 +233,12 @@ linesp <- prev_modeled_dt %>%
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         legend.position = "Off")
+
 linesp
-ggsave(linesp, file = sprintf("%s/charts/bacteria_species_temporal_subsets_lines1.pdf", find_rstudio_root_file()), width = 6, height = 4)
+
+ggsave(linesp, file = sprintf("%s/charts/bacteria_species_temporal_subsets_lines1.pdf",
+                              find_rstudio_root_file()), 
+       width = 6, height = 4)
 
 barsp <- prev_modeled_dt %>%
   filter(kingdom == "Bacteria") %>%
@@ -234,13 +251,18 @@ barsp <- prev_modeled_dt %>%
   theme_bw() +
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
 barsp
-ggsave(barsp, file = sprintf("%s/charts/bacteria_species_temporal_subsets_size1.pdf", find_rstudio_root_file()), width = 3, height = 3)
+ggsave(barsp, 
+       file = sprintf("%s/charts/bacteria_species_temporal_subsets_size1.pdf",
+                      find_rstudio_root_file()), 
+       width = 3, height = 3)
 
 ```
 
 Saving model
 ```{r}
-saveRDS(kmlModelp, file = sprintf("%s/intermediate_files/prev_SGBs_8_temp_subsets_model_abundance2.rda", find_rstudio_root_file()))
+saveRDS(kmlModelp, 
+        file = sprintf("%s/intermediate_files/prev_SGBs_8_temp_subsets_model_abundance2.rda",
+                                  find_rstudio_root_file()))
 ```
 
 saving table for later correlations
