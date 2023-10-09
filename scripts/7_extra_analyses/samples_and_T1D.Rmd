@@ -1,0 +1,101 @@
+---
+title: "Participant / samples charts"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(rprojroot)
+library(wesanderson)
+library(cowplot)
+
+```
+
+
+set paths and filenames
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
+
+xl_metadata=sprintf("%s/data/MP142_FLAT_V2.csv",
+                       find_rstudio_root_file())
+
+```
+
+```{r}
+meta_dt <- fread(metadata_table, sep = ",", header = T) %>%
+  select(-V1)
+
+xl_meta_dt <- fread(xl_metadata, sep = ",", header = T)
+```
+
+```{r}
+diagnose_dt <- xl_meta_dt %>%
+  select(c(mask_id, t1d_diag_age)) %>%
+  mutate(t1d_diag_age = round(t1d_diag_age * 30.5))
+
+```
+
+
+```{r}
+meta_format_dt <- meta_dt %>%
+  mutate(Country = case_when(
+           country == 1 ~ "USA",
+           country == 2 ~ "FIN",
+           country == 3 ~ "GER",
+           country == 4 ~ "SWE",
+           TRUE ~ "other")) %>%
+  group_by(mask_id) %>%
+  mutate(n_samples = n(),
+         latest_sample = max(age_days)) %>%
+  ungroup()
+
+merge_dt <- merge(meta_format_dt, diagnose_dt,
+                  by = "mask_id", all.x = T)
+
+
+samplep <- ggplot(data = merge_dt) +
+  geom_point(aes(x = age_days, 
+                 y = reorder(mask_id, latest_sample), 
+                 color = Country), size = 0.75, alpha = 0.8) +
+  geom_point(aes(x = t1d_diag_age, 
+                 y = reorder(mask_id, latest_sample), 
+                 color = "yellow"), shape = 21) +
+  scale_color_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3", "gold")) +
+  facet_wrap(vars(Country), nrow = 1, scales = "free_y") +
+  theme_cowplot() +
+  theme(axis.text.y = element_blank(),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(x = "Day of Life",
+       y = "Participants")
+
+samplep
+
+ggsave(samplep,
+       file = sprintf("%s/scripts/7_extra_analyses/sample_chart1.pdf",
+                      find_rstudio_root_file()),
+       width = 9, height = 7)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
