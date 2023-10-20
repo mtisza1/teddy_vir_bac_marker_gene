@@ -1682,23 +1682,17 @@ overflow-y: auto;
 border: 1px solid #ddd;
 border-radius: 4px;
 }
-.tabset-dropdown > .nav-tabs > li.active:before {
-content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+content: "\e259";
 font-family: 'Glyphicons Halflings';
 display: inline-block;
 padding: 10px;
 border-right: 1px solid #ddd;
 }
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-content: "";
-border: none;
-}
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-content: "";
+content: "\e258";
 font-family: 'Glyphicons Halflings';
-display: inline-block;
-padding: 10px;
-border-right: 1px solid #ddd;
+border: none;
 }
 .tabset-dropdown > .nav-tabs > li.active {
 display: block;
@@ -1762,255 +1756,127 @@ genus/species) from big long form abundance table</h1>
 <p>load packages</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxubGlicmFyeShkYXRhLnRhYmxlKVxuYGBgXG5gYGAifQ== -->
-<pre class="r"><code>```r
-library(data.table)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiUmVnaXN0ZXJlZCBTMyBtZXRob2Qgb3ZlcndyaXR0ZW4gYnkgJ2RhdGEudGFibGUnOlxuICBtZXRob2QgICAgICAgICAgIGZyb21cbiAgcHJpbnQuZGF0YS50YWJsZSAgICAgXG5kYXRhLnRhYmxlIDEuMTQuMiB1c2luZyAxIHRocmVhZHMgKHNlZSA/Z2V0RFR0aHJlYWRzKS4gIExhdGVzdCBuZXdzOiByLWRhdGF0YWJsZS5jb21cbioqKioqKioqKipcblRoaXMgaW5zdGFsbGF0aW9uIG9mIGRhdGEudGFibGUgaGFzIG5vdCBkZXRlY3RlZCBPcGVuTVAgc3VwcG9ydC4gSXQgc2hvdWxkIHN0aWxsIHdvcmsgYnV0IGluIHNpbmdsZS10aHJlYWRlZCBtb2RlLlxuVGhpcyBpcyBhIE1hYy4gUGxlYXNlIHJlYWQgaHR0cHM6Ly9tYWMuci1wcm9qZWN0Lm9yZy9vcGVubXAvLiBQbGVhc2UgZW5nYWdlIHdpdGggQXBwbGUgYW5kIGFzayB0aGVtIGZvciBzdXBwb3J0LiBDaGVjayByLWRhdGF0YWJsZS5jb20gZm9yIHVwZGF0ZXMsIGFuZCBvdXIgTWFjIGluc3RydWN0aW9ucyBoZXJlOiBodHRwczovL2dpdGh1Yi5jb20vUmRhdGF0YWJsZS9kYXRhLnRhYmxlL3dpa2kvSW5zdGFsbGF0aW9uLiBBZnRlciBzZXZlcmFsIHllYXJzIG9mIG1hbnkgcmVwb3J0cyBvZiBpbnN0YWxsYXRpb24gcHJvYmxlbXMgb24gTWFjLCBpdCdzIHRpbWUgdG8gZ2luZ2VybHkgcG9pbnQgb3V0IHRoYXQgdGhlcmUgaGF2ZSBiZWVuIG5vIHNpbWlsYXIgcHJvYmxlbXMgb24gV2luZG93cyBvciBMaW51eC5cbioqKioqKioqKipcbiJ9 --&gt;
-</code></pre>
-<p>Registered S3 method overwritten by ‘data.table’: method from
-print.data.table<br />
-data.table 1.14.2 using 1 threads (see ?getDTthreads). Latest news:
-r-datatable.com ********** This installation of data.table has not
-detected OpenMP support. It should still work but in single-threaded
-mode. This is a Mac. Please read <a href="https://mac.r-project.org/openmp/" class="uri">https://mac.r-project.org/openmp/</a>. Please engage with
-Apple and ask them for support. Check r-datatable.com for updates, and
-our Mac instructions here: <a href="https://github.com/Rdatatable/data.table/wiki/Installation" class="uri">https://github.com/Rdatatable/data.table/wiki/Installation</a>.
-After several years of many reports of installation problems on Mac,
-it’s time to gingerly point out that there have been no similar problems
-on Windows or Linux. **********</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxubGlicmFyeShzdHJpbmdyKVxubGlicmFyeShkcGx5cilcbmBgYFxuYGBgIn0= --&gt;
-
-```r
-```r
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShkYXRhLnRhYmxlKVxubGlicmFyeShzdHJpbmdyKVxubGlicmFyeShkcGx5cilcbmxpYnJhcnkodGlkeXIpXG5saWJyYXJ5KHJwcm9qcm9vdClcbmBgYCJ9 -->
+<pre class="r"><code>library(data.table)
 library(stringr)
-library(dplyr)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiXG5BdHRhY2hpbmcgcGFja2FnZTog4oCYZHBseXLigJlcblxuVGhlIGZvbGxvd2luZyBvYmplY3RzIGFyZSBtYXNrZWQgZnJvbSDigJhwYWNrYWdlOmRhdGEudGFibGXigJk6XG5cbiAgICBiZXR3ZWVuLCBmaXJzdCwgbGFzdFxuXG5UaGUgZm9sbG93aW5nIG9iamVjdHMgYXJlIG1hc2tlZCBmcm9tIOKAmHBhY2thZ2U6c3RhdHPigJk6XG5cbiAgICBmaWx0ZXIsIGxhZ1xuXG5UaGUgZm9sbG93aW5nIG9iamVjdHMgYXJlIG1hc2tlZCBmcm9tIOKAmHBhY2thZ2U6YmFzZeKAmTpcblxuICAgIGludGVyc2VjdCwgc2V0ZGlmZiwgc2V0ZXF1YWwsIHVuaW9uXG4ifQ== --&gt;
-</code></pre>
-<p>Attaching package: ‘dplyr’</p>
-<p>The following objects are masked from ‘package:data.table’:</p>
-<pre><code>between, first, last</code></pre>
-<p>The following objects are masked from ‘package:stats’:</p>
-<pre><code>filter, lag</code></pre>
-<p>The following objects are masked from ‘package:base’:</p>
-<pre><code>intersect, setdiff, setequal, union</code></pre>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxubGlicmFyeSh0aWR5cilcbmxpYnJhcnkocnByb2pyb290KVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
+library(dplyr)
 library(tidyr)
 library(rprojroot)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-load longform table with all the abundance data, parse and filter
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuZ2V0d2QoKVxuXG5gYGBcbmBgYCJ9 --&gt;
-
-```r
-```r
-getwd()
-</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiWzFdIFxcL1VzZXJzL3UyNDEzNzQvbWlrZV90aXN6YS90ZWRkeV92aXJvbWUvdGVkZHlfdmlyX2JhY19tYXJrZXJfZ2VuZVIvc2NyaXB0cy8xX3BhcnNlXFxcbiJ9 --&gt;
-</code></pre>
-<p>[1]
-/Users/u241374/mike_tisza/teddy_virome/teddy_vir_bac_marker_geneR/scripts/1_parse<br />
-</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-make wideform table: virus species
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxud2lkZV92aXJfc3BfZHQgPC0gbG9uZ19kdCAlPiVcbiAgc3Vic2V0KCBzZWxlY3QgPSBjKFxca2luZ2RvbVxcLCBcXHNwZWNpZXNcXCwgXFxyZWxfYWJ1bmRhbmNlXFwsIFxcc2FtcGxlSURcXCkpICU+JVxuICBwaXZvdF93aWRlcihuYW1lc19mcm9tID0gc2FtcGxlSUQsIHZhbHVlc19mcm9tID0gcmVsX2FidW5kYW5jZSwgdmFsdWVzX2ZpbGwgPSAwKSAlPiVcbiAgZmlsdGVyKGtpbmdkb20gPT0gXFxrX19WaXJ1c2VzXFwpICU+JVxuICBzZWxlY3QoLWtpbmdkb20pXG5cbndyaXRlLnRhYmxlKHdpZGVfdmlyX3NwX2R0LCBmaWxlID0gc3ByaW50ZihcXCVzL2ludGVybWVkaWF0ZV9maWxlcy9UR1ZHMS4xX01QQTRfY29tYmluZWRfYWJ1bmRhbmNlLnZpcnVzX3NwZWNpZXMud2lkZS50c3ZcXCwgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKSwgcXVvdGUgPSBGLCBzZXAgPSBcXFxcdFxcLCByb3cubmFtZXMgPSBGLCBjb2wubmFtZXMgPSBUKVxucm0od2lkZV92aXJfc3BfZHQpXG5gYGBcbmBgYCJ9 --&gt;
-
-```r
-```r
-wide_vir_sp_dt &lt;- long_dt %&gt;%
-  subset( select = c(\kingdom\, \species\, \rel_abundance\, \sampleID\)) %&gt;%
-  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %&gt;%
-  filter(kingdom == \k__Viruses\) %&gt;%
-  select(-kingdom)
-
-write.table(wide_vir_sp_dt, file = sprintf(\%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.virus_species.wide.tsv\, find_rstudio_root_file()), quote = F, sep = \\t\, row.names = F, col.names = T)
-rm(wide_vir_sp_dt)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-make wideform table: bacteria species
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxud2lkZV9iYWNfc3BfZHQgPC0gbG9uZ19kdCAlPiVcbiAgc3Vic2V0KCBzZWxlY3QgPSBjKFxca2luZ2RvbVxcLCBcXHNwZWNpZXNcXCwgXFxyZWxfYWJ1bmRhbmNlXFwsIFxcc2FtcGxlSURcXCkpICU+JVxuICBwaXZvdF93aWRlcihuYW1lc19mcm9tID0gc2FtcGxlSUQsIHZhbHVlc19mcm9tID0gcmVsX2FidW5kYW5jZSwgdmFsdWVzX2ZpbGwgPSAwKSAlPiVcbiAgZmlsdGVyKGtpbmdkb20gPT0gXFxrX19CYWN0ZXJpYVxcKSAlPiVcbiAgc2VsZWN0KC1raW5nZG9tKVxuXG53cml0ZS50YWJsZSh3aWRlX2JhY19zcF9kdCwgZmlsZSA9IHNwcmludGYoXFwlcy9pbnRlcm1lZGlhdGVfZmlsZXMvVEdWRzEuMV9NUEE0X2NvbWJpbmVkX2FidW5kYW5jZS5iYWN0ZXJpYV9zcGVjaWVzLndpZGUudHN2XFwsIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSksIHF1b3RlID0gRiwgc2VwID0gXFxcXHRcXCwgcm93Lm5hbWVzID0gRiwgY29sLm5hbWVzID0gVClcbnJtKHdpZGVfYmFjX3NwX2R0KVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-wide_bac_sp_dt &lt;- long_dt %&gt;%
-  subset( select = c(\kingdom\, \species\, \rel_abundance\, \sampleID\)) %&gt;%
-  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %&gt;%
-  filter(kingdom == \k__Bacteria\) %&gt;%
-  select(-kingdom)
-
-write.table(wide_bac_sp_dt, file = sprintf(\%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.bacteria_species.wide.tsv\, find_rstudio_root_file()), quote = F, sep = \\t\, row.names = F, col.names = T)
-rm(wide_bac_sp_dt)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-make wideform table: virus genera
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxud2lkZV92aXJfZ2VfZHQgPC0gbG9uZ19kdCAlPiVcbiAgc3Vic2V0KCBzZWxlY3QgPSBjKFxca2luZ2RvbVxcLCBcXGdlbnVzXFwsIFxccmVsX2FidW5kYW5jZVxcLCBcXHNhbXBsZUlEXFwpKSAlPiVcbiAgZ3JvdXBfYnkoZ2VudXMsIHNhbXBsZUlEKSAlPiVcbiAgbXV0YXRlKHJlbF9hYnVuZGFuY2UgPSBzdW0ocmVsX2FidW5kYW5jZSkpICU+JVxuICBkaXN0aW5jdCgpICU+JVxuICB1bmdyb3VwKCkgJT4lXG4gIHBpdm90X3dpZGVyKG5hbWVzX2Zyb20gPSBzYW1wbGVJRCwgdmFsdWVzX2Zyb20gPSByZWxfYWJ1bmRhbmNlLCB2YWx1ZXNfZmlsbCA9IDApICU+JVxuICBmaWx0ZXIoa2luZ2RvbSA9PSBcXGtfX1ZpcnVzZXNcXCkgJT4lXG4gIHNlbGVjdCgta2luZ2RvbSlcblxud3JpdGUudGFibGUod2lkZV92aXJfZ2VfZHQsIGZpbGUgPSBzcHJpbnRmKFxcJXMvaW50ZXJtZWRpYXRlX2ZpbGVzL1RHVkcxLjFfTVBBNF9jb21iaW5lZF9hYnVuZGFuY2UudmlydXNfZ2VudXMud2lkZS50c3ZcXCwgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKSwgcXVvdGUgPSBGLCBzZXAgPSBcXFxcdFxcLCByb3cubmFtZXMgPSBGLCBjb2wubmFtZXMgPSBUKVxucm0od2lkZV92aXJfZ2VfZHQpXG5gYGBcbmBgYCJ9 --&gt;
-
-```r
-```r
-wide_vir_ge_dt &lt;- long_dt %&gt;%
-  subset( select = c(\kingdom\, \genus\, \rel_abundance\, \sampleID\)) %&gt;%
-  group_by(genus, sampleID) %&gt;%
-  mutate(rel_abundance = sum(rel_abundance)) %&gt;%
-  distinct() %&gt;%
-  ungroup() %&gt;%
-  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %&gt;%
-  filter(kingdom == \k__Viruses\) %&gt;%
-  select(-kingdom)
-
-write.table(wide_vir_ge_dt, file = sprintf(\%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.virus_genus.wide.tsv\, find_rstudio_root_file()), quote = F, sep = \\t\, row.names = F, col.names = T)
-rm(wide_vir_ge_dt)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-make wideform table: bacteria genera
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxud2lkZV9iYWNfZ2VfZHQgPC0gbG9uZ19kdCAlPiVcbiAgc3Vic2V0KCBzZWxlY3QgPSBjKFxca2luZ2RvbVxcLCBcXGdlbnVzXFwsIFxccmVsX2FidW5kYW5jZVxcLCBcXHNhbXBsZUlEXFwpKSAlPiVcbiAgZ3JvdXBfYnkoZ2VudXMsIHNhbXBsZUlEKSAlPiVcbiAgbXV0YXRlKHJlbF9hYnVuZGFuY2UgPSBzdW0ocmVsX2FidW5kYW5jZSkpICU+JVxuICBkaXN0aW5jdCgpICU+JVxuICB1bmdyb3VwKCkgJT4lXG4gIHBpdm90X3dpZGVyKG5hbWVzX2Zyb20gPSBzYW1wbGVJRCwgdmFsdWVzX2Zyb20gPSByZWxfYWJ1bmRhbmNlLCB2YWx1ZXNfZmlsbCA9IDApICU+JVxuICBmaWx0ZXIoa2luZ2RvbSA9PSBcXGtfX0JhY3RlcmlhXFwpICU+JVxuICBzZWxlY3QoLWtpbmdkb20pXG5cbndyaXRlLnRhYmxlKHdpZGVfYmFjX2dlX2R0LCBmaWxlID0gc3ByaW50ZihcXCVzL2ludGVybWVkaWF0ZV9maWxlcy9UR1ZHMS4xX01QQTRfY29tYmluZWRfYWJ1bmRhbmNlLmJhY3RlcmlhX2dlbnVzLndpZGUudHN2XFwsIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSksIHF1b3RlID0gRiwgc2VwID0gXFxcXHRcXCwgcm93Lm5hbWVzID0gRiwgY29sLm5hbWVzID0gVClcbnJtKHdpZGVfYmFjX2dlX2R0KVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-wide_bac_ge_dt &lt;- long_dt %&gt;%
-  subset( select = c(\kingdom\, \genus\, \rel_abundance\, \sampleID\)) %&gt;%
-  group_by(genus, sampleID) %&gt;%
-  mutate(rel_abundance = sum(rel_abundance)) %&gt;%
-  distinct() %&gt;%
-  ungroup() %&gt;%
-  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %&gt;%
-  filter(kingdom == \k__Bacteria\) %&gt;%
-  select(-kingdom)
-
-write.table(wide_bac_ge_dt, file = sprintf(\%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.bacteria_genus.wide.tsv\, find_rstudio_root_file()), quote = F, sep = \\t\, row.names = F, col.names = T)
-rm(wide_bac_ge_dt)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-check archaea prevalence
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxubG9uZ19kdCAlPiVcbiAgZmlsdGVyKGtpbmdkb20gPT0gXFxrX19BcmNoYWVhXFwpICU+JVxuICBhcnJhbmdlKGRlc2MocmVsX2FidW5kYW5jZSkpXG5gYGBcbmBgYCJ9 --&gt;
-
-```r
-```r
-long_dt %&gt;%
-  filter(kingdom == \k__Archaea\) %&gt;%
-  arrange(desc(rel_abundance))</code></pre>
-<p>```</p>
 <!-- rnb-source-end -->
-<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbImRhdGEudGFibGUiLCJkYXRhLmZyYW1lIl0sIm5yb3ciOjE1NiwibmNvbCI6NSwic3VtbWFyeSI6eyJEZXNjcmlwdGlvbiI6ImR0IFsxNTYgw5cgNV0ifX0sInJkZiI6Ikg0c0lBQUFBQUFBQUErMWNDM1JVeFJsZUhpRWxFaHBLa0pabk5RVkVDTjY1OTg2ZE80RDhTcENFWndBaEVGNmJUYklrQzVzTmJqYTgxZkJzYU1NYkJSVXFDUEt3OHJRZ1dGQVJGWXIyWU9Gd2pvZEhrZExTSHNBQ0JSRjdMUFRmY1BmT3pTS2VJSnZzeHJQSjJjejlaLzZaK2Yvdi8vNS81cDdrWkZDUFlVcmNzRGlielZiSFZyZDJMVnVkR0h5MHhRd1ozRE5adDJFUENyVnNkVzMxL2Uwa1ZHcnNIOFZQUS95c2dBLzdadnJPalRnUEg5WXYyZDQ5dGdIc2I5UzZnYnB2STd5Lyt2UnUvWlZCc0hmc2c2M1NKMlRCbGwrN0xuYjh1eE8yOURxY2NmNWdGbXh1TWF6TmlEb2o0YlVOS1NXbEExYkFxcGVHYjVsMDh4SzhtbmZ0eE9rRnFiQjgxY0xrTCtLYnczTFh6SUhEZGowQ1N5KzgzTFRnK0dGWXVtL0RteU1iL3crV25GcDJ2Y1BZZjhHU3VUdCtHWHVxQjh4NzlyMjA1ejlaREdXM0xzVDJudGdTeWk1THp5ZDlPaC9LQ2xvbGxFRTNLUE52TitJWXpMVi91Yzd4Q0lmU2Z3NWRQTC9CNzJEMk55djByYjEzd3V6cDlYNTE2ckhtTU5zZFh6aTR6M2FZM1hlNXZkNzFwVEE3T2FuLzd0VVRZVmFmYlZzNkp4NkdtYlZ5WnpWczJneG1ITmkxOE5qcnU2RmtOYnRhTnBoQnlZdC9YSDdnYnpQZ3VVM0hGcjYvcVM0OGwvbWZkMWEyempMYmFUTWUvTGpKdyt0aFdrckgxNmRNY3NQVVMrVkF3T1F2cHhYdWJmYzRUSDVxNS80SkQxeUhTZjVkZS9xZytKQjdWZGMrY1ZDOGFpcDlkSllPeFVNVGQzK1Mzd3Q4K0RQdDNaM2dtM0ltZFhQaVZQRDlMR1pQclRVZThNNXZzSEtsbWdsZXo3SjU2YWU3Z0xjTmFYUjVmMS93TnZ2RDJ4MEhMZ2R2Z2o0eTcvUlplS1o5NllJNXpSd3cvcXRtZjlweTVyaG8wWm5zc3IwdzN2Q25NS3Zwc2s4NzI4Q3pKcE4rMnlVZFBKMmZmU1A5VUFvVUpKN2RjM1Q0SEhBYnVJNmI0MGw1WS9JZUdKYzZLK21uaDZmRE9QbTNCWE11L2h6eWo0dytGZE9ld3BodExjbzF4eUFMN0o5dkJ1ZU9vdk52NWEwR3A0RnZybis1MmFXUWEvaVYwMkhJcGRhbkxvcld3RHY3Z3lrNVJlN1RrTDI4OUlaalhUeGt6MXpZL2ZNUDFvTERUN2NOYjBLVzRVZldGdzhudHIzcGhheWQwc1ltYkJWa1RleFpPbVdlRTBaLzNiVkI2NE5YWVhTYldkYytQbmNjUnEzZit0YWl4Ymt3eXVETnFQWW52U01mL3plTU5PSTBZcXQ5ODU0bjVrUG1XVnZpalIxeklkUFo0ZWgrUjJQSTdOSTVmOXZMVDhMUUMxc1NrbksyaS9ZWFg5ODROUDBseU1EWjY2NStCUmtya3Q1K0lUa0pNdEtlT1BQTXF5V1FZZmcvNU5yb0IvbzNPaWxhQTRmQk4zYVVuczIvSXRxMVI3YS9kNklmUEgyMCtTdGp2bEZFT3lSMU9GbjdMZ3g2YkpON0I2MEZBMDhjZW5IUitsRjN0QU1NSEFaazl6dHlaZU8za0g3d2F0S2szOGREZW5GQ3Z5RXRYWkQrVVBKRXN1QWo2UC9uM3FzYjFuNEkrdjNsdFZack1qWFJHcmowUGVaUGtENmk3YVJjdXZKQ0hlaGp4RG5ROXY3cmhtVTVvMzNRK3pjZjdZUFBQb05lQzFwMk85YnVIOURMd0N2TnlMZTBKYjQ5WTUvN0w2VEJvbk05cjJSQXFvRmZUd012c3pWd2U4ckFwOGVBU3lkWDlOc0lLUnNmbFliSURrZ3hjT2krYWZxbTgzTW5BQmgrZFRQaTI5V3cxMndOdXpzYmRuTERQdTF5dlhtNzNqa0ExTWd6MWRoSHVjMDdySEVKL2pwbkZNQllYYWVhcHZDQXFDaVN3aVF0SUhLTmFZelNnRWlwb2t2RUhKVjFTYUxFSE9WY3Awd3pSWTNKR3VvSFJDYmowbUlwV1pKbFFzMmxHSlYwcWpQVEtzWlZUczI1UkZZVlZEZm5hcEpLRlhNcG91bWFMdkc3aUpRU2ljbVNPYW9xakFnSE5SV0hkVlBVWlVabHlUU0RLeG9qUkRWRmxSQXV6UEEvUzF5WW9hcWFSbVNCaHN4MVpvcXlUQW42RkJCVlhaRjF6VnlaY1NxcGltbUdnanRaYk5aeFgwdU1FRlRHQ2J0TEJCbFJpUzZyRmdkbERKSTVLc2thNDF6Z2pNcEVBS3NRWFNQbXZreVhLQmN4NGlvR2xKa3JxK2lPS3BzeFVuRmpLckJpTXFvcUZweUphakZESnNRYWZVcDFtUW9SWVVRbUthYVJoRE9rbGxoWmsyVlpzVmdsY2ZWdUZPV2NhVnl3RGszbU11TWlLSVJyUWhtQmtYVFpIT1hFengyeGtVYUlybG95UlZhWVFFT1gvVUV6MGRDWVJIUm1FWU55UVZJWk4xZkc2SEZKTXBkQzBra1dxMVJPMEdGenJxS3J1SStGc1dpbEtxaWk2TndTWDhvWm9hcEpRdlNHeVNMTGtCbUVNUk1jVmRjNHNaQUJNMVRWTERUVHVDekFRU04xTHVLTDdFYllSUTRxQ21Zc0UxaEp5SGJUWDVRVVlxa3FGWTJraWt3MFRSSVIxSW1pV3dKYW9jaWdJT0ZXcGlneFRCWnpMdnJLSlVVUysrb0VPVzNDTG5OR2hRc013NEJHQ3hjb3dhUVZVY0NkVlUyTVlnWnJJa1k2SnJERndZcFZORGdLRmNIUjBGMmNiNHFFNmhhUG1FS3dCSW1pcWtsWUMwd3l5QmhPQzVLTXlGUW1kL1hYenprdVFvWWJ5UmJXSWJjMVJiaUF3REdMc3FJaUlJS0VXRU4xeFpMTytLM0xZaTRtQ2hWbGszQWlVZUd2SDBrUkZJNE9xbFRZak5HVk5ITXBWWldwYmdrM3dSaUp5cUJwR0dGUkNyQnM2S3BrV3FXaXpaS3dtV282SGd2bWFCQ2ZDVExTY3RJRkpSMkdRT2F5Wm9rdkhsZW1SMEhWbTJNTlZTeDFvMkxOWVNxVG1UZ1hzSFJSVlNST2tMS2ZZNXlKUEtJS1JsQVI0Q0N0UkliaXM4S29JRkpRemFsNHdqSVZhU2RiVWhMSlRpekFWcUNaRXNRNkxESzZvQW9TVkpmRmlhUGpXVVVWSVVwY2w0UXlSL0p6a1RoSWJTcFpTb0ZDT1JGelZkeEpFU3NIUVljbEI2OEpxckNLcVpvSUN0V29oa2VoS1NLVWxBdXJxSXhWUkFSVW82cUZ6M2llWW5KUVc4VzdVcnNpdTcyZjA1ZnY4QlJtZTUwVFhObU9ISi9UYXk4cWNQbnlYYTVwUHJ2OTZkVHV6QVF4cWg0aTliWkNQYWZZN1hZV0YvbkhzWmhSMWRBdGY0NUUwKzlSdlNXcXA2WjJ4NXNSOHc5Z2hRNTQ2SCtzc1NiVTRBQldDbzU3ODY4cXRhczBNRlZxU3ZoNUYwRmcxT0NFaWVJU0J0TXJsVHdSY0xoRVRrSkdFRTNERnJ3SUlFUkVxZGRZdmxYQkpTVnNCU2pzRjY2d3BXUFluYnBIZTF2Y1hwUHB4TjlQSkRtd3BQOHhZcXdNRzVFajZJU3BUS1JxR3FPcmdGbGhONkNtOGFybUxoNUpMeEkxMTVhYWtWV1JVNFhDZnhyV01NQ3F3TnlhZHM1Vnl0N1FYOFhhZmpjQ2hWNkgyMVVVQU1EOEM0VXFMV0VodTcyRTZ4SWNBVGZXU3E5WjhUZGVUZksrYTlxUGI3QlJYakIvdzJoTVhKNFowT3BlcTdweHVOTzh1MXB3N3dNL3pOTWZ0bHlvY0s0dUx5TXFqMnFHbFhlR09KU0pHa0pHaERnSTkrMTNLR0dxYmtaVWVabW9PaTZHb3JiZWQreERzZVgzYmxBL0wzRC9DdkhDOTQxL2lOUHdEa2ZEZCtSVUY3T3E4elNKaUZ0RWRaK1MxUnpoNmpqajd2dHNDaytlaEtHc1ZyNXlWZ0V0SzFITjd2Y2dxSWFYcG9vdnkzSGo3UFludlRuNURxY2oyaFB0aWZaRWU2STkwWjVvVDdRbjJoUHQrUkgyVlB4Zkd2VzloUk03ZVJ3RnppSVU0dkZUdXdSLzNMcDFLemRJTVNiSDdTanlLeVZZT3VOeUhUNUhwekZlbkIrc0hsalRyeDVqZE1aN25XNjdJN3ZZayt2dzVEaU56cDhVT1FyR3U1MjllaGh5Yk5GNFo0N0xHWGdqaWNsemVzelhrOWh4TGs5ZWJtRUJQdDRNMmpDMmNMelBWZWpCTFdzSC9qV0kxZEphM3FDT2hHS1AzOFRjNUp6OFlzKzQ1UExmb3NXVmo5LytpamVlVjFpZVkyN3ZXZmRXa0YvMW5KNDhseWZnVUl6YmtlMTBHMEpEeExjY2lrN2p2UzZQTDRBYjloWjE4aFg2SEFHOXVKeENkNkNuM0RuYnpmOERBWFlQNUJKRkFBQT0ifQ== -->
-<div data-pagedtable="false">
-<script data-pagedtable-source type="application/json">
-{"columns":[{"label":["rel_abundance"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["sampleID"],"name":[2],"type":["chr"],"align":["left"]},{"label":["species"],"name":[3],"type":["chr"],"align":["left"]},{"label":["genus"],"name":[4],"type":["chr"],"align":["left"]},{"label":["kingdom"],"name":[5],"type":["chr"],"align":["left"]}],"data":[{"1":"0.15858","2":"8856639","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.15654","2":"3303706","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.14896","2":"9676755","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.12994","2":"5538016","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.11490","2":"2800515","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.06158","2":"9985765","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.06111","2":"6726538","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.05881","2":"7230355","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.03644","2":"2022156","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.03242","2":"7508587","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.03067","2":"8794958","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.02405","2":"1243221","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.02384","2":"2604535","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.02043","2":"1686809","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.02027","2":"1686809","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.01940","2":"5510720","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.01908","2":"1437106","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.01440","2":"6451086","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.01416","2":"8275207","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.01413","2":"9367114","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.01388","2":"9411921","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.01384","2":"1921095","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.01239","2":"1446612","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.01216","2":"9929872","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.01073","2":"2251949","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.01050","2":"4832864","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.01046","2":"7950436","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.01040","2":"3941720","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.01034","2":"8411639","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00991","2":"5387917","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00928","2":"8856639","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00917","2":"7141824","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00812","2":"6452051","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00810","2":"7026799","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00749","2":"8741811","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00741","2":"2318610","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00741","2":"7805956","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00696","2":"9426574","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00690","2":"4949428","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00682","2":"4714514","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00633","2":"7257436","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00617","2":"6414051","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00595","2":"2112156","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00532","2":"5582556","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00528","2":"6618573","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00521","2":"8197985","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00506","2":"7262223","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00500","2":"9420945","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00490","2":"5538016","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00453","2":"9976955","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00450","2":"9499279","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00443","2":"2219616","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00442","2":"7990829","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00441","2":"9155103","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00419","2":"9611849","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00414","2":"3323774","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00414","2":"8239418","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00411","2":"6701878","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00406","2":"6726538","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00383","2":"7204793","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00374","2":"6399004","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00369","2":"3670616","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00355","2":"4916228","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00347","2":"3844186","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00336","2":"8215540","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00333","2":"8389799","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00332","2":"5971542","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00303","2":"1037287","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00277","2":"5201775","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00270","2":"4869111","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00265","2":"2022467","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00260","2":"8869229","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00255","2":"3678936","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00253","2":"2518019","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00234","2":"1334327","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00234","2":"3302863","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00232","2":"3023155","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00229","2":"5971542","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00227","2":"5321660","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00226","2":"9981386","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00209","2":"9985765","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00207","2":"8570343","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00206","2":"8078410","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00204","2":"2879030","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00201","2":"3081780","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00189","2":"6297536","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00184","2":"7639432","3":"s__GGB781_SGB1024|t__SGB1024","4":"g__GGB781","5":"k__Archaea"},{"1":"0.00181","2":"1351225","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00180","2":"4999846","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00178","2":"1348366","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00174","2":"4895063","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00169","2":"3303706","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00158","2":"5971542","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00155","2":"1334327","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00154","2":"6216489","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00146","2":"6158343","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00146","2":"7317115","3":"s__GGB781_SGB1024|t__SGB1024","4":"g__GGB781","5":"k__Archaea"},{"1":"0.00141","2":"6601168","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00139","2":"2728155","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00138","2":"7125210","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00136","2":"3081780","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00135","2":"6479396","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00134","2":"2158204","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00134","2":"3849633","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00130","2":"3903796","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00128","2":"2341358","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00128","2":"3710831","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00126","2":"2121282","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00121","2":"3918454","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00121","2":"9191057","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00118","2":"6999830","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00111","2":"9317450","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00109","2":"3576062","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00109","2":"4425865","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00109","2":"8139473","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00103","2":"6628723","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00100","2":"6188401","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00097","2":"4341058","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00096","2":"5688091","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00095","2":"8869229","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00094","2":"1315755","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00091","2":"4916228","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00091","2":"7112926","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00090","2":"3300857","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00088","2":"7950436","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00088","2":"9861303","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00086","2":"9499279","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00083","2":"7472772","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00083","2":"9455419","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00082","2":"9499279","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00081","2":"8366977","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00078","2":"3539393","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00077","2":"4415467","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00076","2":"5463759","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00075","2":"6726538","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00074","2":"7508587","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00073","2":"7421623","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00069","2":"3012213","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00069","2":"6601168","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00068","2":"3601168","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00065","2":"2389833","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00062","2":"1718224","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00060","2":"8163534","3":"s__GGB781_SGB1024|t__SGB1024","4":"g__GGB781","5":"k__Archaea"},{"1":"0.00059","2":"8098033","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00057","2":"9334966","3":"s__Methanobrevibacter_oralis|t__SGB720","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00048","2":"1155055","3":"s__Methanoculleus_SGB47954|t__SGB47954","4":"g__Methanoculleus","5":"k__Archaea"},{"1":"0.00046","2":"5359134","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00044","2":"4238324","3":"s__GGB781_SGB1024|t__SGB1024","4":"g__GGB781","5":"k__Archaea"},{"1":"0.00044","2":"7472772","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00043","2":"5187944","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00041","2":"2374657","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00039","2":"5656141","3":"s__GGB781_SGB1024|t__SGB1024","4":"g__GGB781","5":"k__Archaea"},{"1":"0.00035","2":"5836594","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00033","2":"8527656","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"},{"1":"0.00031","2":"3654831","3":"s__GGB1567_SGB2154|t__SGB2154","4":"g__GGB1567","5":"k__Archaea"},{"1":"0.00029","2":"6631585","3":"s__Methanobrevibacter_smithii|t__SGB713","4":"g__Methanobrevibacter","5":"k__Archaea"}],"options":{"columns":{"min":{},"max":[10],"total":[5]},"rows":{"min":[10],"max":[10],"total":[156]},"pages":{}}}
-  </script>
-</div>
-<!-- rnb-frame-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>load longform table with all the abundance data, parse and filter</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMgdXNpbmcgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpIGluIG9yZGVyIHRvIGF2b2lkIHJlbGF0aXZlIHBhdGhzXG5sb25nX2R0IDwtIGZyZWFkKFxuICBzcHJpbnRmKFwiJXMvZGF0YS9tYXJrZXJtYWd1X3JlbGF4ZWQxLmNvbWJpbmVkX3Byb2ZpbGUudHN2XCIsXG4gICAgICAgICAgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKSwgXG4gIHNlcCA9IFwiXFx0XCIsIGhlYWRlciA9IFQpXG5gYGAifQ== -->
+<pre class="r"><code>## using find_rstudio_root_file() in order to avoid relative paths
+long_dt &lt;- fread(
+  sprintf(&quot;%s/data/markermagu_relaxed1.combined_profile.tsv&quot;,
+          find_rstudio_root_file()), 
+  sep = &quot;\t&quot;, header = T)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gZnJlYWQoc3ByaW50ZihcIiVzL2RhdGEvbWFya2VybWFndV9yZWxheGVkMS5jb21iaW5lZF9wcm9maWxlLnRzdlwiLCAgOiBcbiAgRmlsZSAnL1VzZXJzL21pY2hhZWx0aXN6YS9taWtlX3Rpc3phL2dpdGh1Yl9yZXBvcy90ZWRkeV92aXJfYmFjX21hcmtlcl9nZW5lL2RhdGEvbWFya2VybWFndV9yZWxheGVkMS5jb21iaW5lZF9wcm9maWxlLnRzdicgZG9lcyBub3QgZXhpc3Qgb3IgaXMgbm9uLXJlYWRhYmxlLiBnZXR3ZCgpPT0nL1VzZXJzL21pY2hhZWx0aXN6YS9taWtlX3Rpc3phL2dpdGh1Yl9yZXBvcy90ZWRkeV92aXJfYmFjX21hcmtlcl9nZW5lL3NjcmlwdHMvMV9wYXJzZSdcbiJ9 -->
+<pre><code>Error in fread(sprintf(&quot;%s/data/markermagu_relaxed1.combined_profile.tsv&quot;,  : 
+  File &#39;/Users/michaeltisza/mike_tisza/github_repos/teddy_vir_bac_marker_gene/data/markermagu_relaxed1.combined_profile.tsv&#39; does not exist or is non-readable. getwd()==&#39;/Users/michaeltisza/mike_tisza/github_repos/teddy_vir_bac_marker_gene/scripts/1_parse&#39;</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>make wideform table: virus species</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud2lkZV92aXJfc3BfZHQgPC0gbG9uZ19kdCAlPiVcbiAgc3Vic2V0KCBzZWxlY3QgPSBjKFwia2luZ2RvbVwiLCBcInNwZWNpZXNcIiwgXCJyZWxfYWJ1bmRhbmNlXCIsIFwic2FtcGxlSURcIikpICU+JVxuICBwaXZvdF93aWRlcihuYW1lc19mcm9tID0gc2FtcGxlSUQsIHZhbHVlc19mcm9tID0gcmVsX2FidW5kYW5jZSwgdmFsdWVzX2ZpbGwgPSAwKSAlPiVcbiAgZmlsdGVyKGtpbmdkb20gPT0gXCJrX19WaXJ1c2VzXCIpICU+JVxuICBzZWxlY3QoLWtpbmdkb20pXG5cbndyaXRlLnRhYmxlKHdpZGVfdmlyX3NwX2R0LCBmaWxlID0gc3ByaW50ZihcIiVzL2ludGVybWVkaWF0ZV9maWxlcy9UR1ZHMS4xX01QQTRfY29tYmluZWRfYWJ1bmRhbmNlLnZpcnVzX3NwZWNpZXMud2lkZS50c3ZcIiwgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKSwgcXVvdGUgPSBGLCBzZXAgPSBcIlxcdFwiLCByb3cubmFtZXMgPSBGLCBjb2wubmFtZXMgPSBUKVxucm0od2lkZV92aXJfc3BfZHQpXG5gYGAifQ== -->
+<pre class="r"><code>wide_vir_sp_dt &lt;- long_dt %&gt;%
+  subset( select = c(&quot;kingdom&quot;, &quot;species&quot;, &quot;rel_abundance&quot;, &quot;sampleID&quot;)) %&gt;%
+  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %&gt;%
+  filter(kingdom == &quot;k__Viruses&quot;) %&gt;%
+  select(-kingdom)
+
+write.table(wide_vir_sp_dt, file = sprintf(&quot;%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.virus_species.wide.tsv&quot;, find_rstudio_root_file()), quote = F, sep = &quot;\t&quot;, row.names = F, col.names = T)
+rm(wide_vir_sp_dt)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>make wideform table: bacteria species</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud2lkZV9iYWNfc3BfZHQgPC0gbG9uZ19kdCAlPiVcbiAgc3Vic2V0KCBzZWxlY3QgPSBjKFwia2luZ2RvbVwiLCBcInNwZWNpZXNcIiwgXCJyZWxfYWJ1bmRhbmNlXCIsIFwic2FtcGxlSURcIikpICU+JVxuICBwaXZvdF93aWRlcihuYW1lc19mcm9tID0gc2FtcGxlSUQsIHZhbHVlc19mcm9tID0gcmVsX2FidW5kYW5jZSwgdmFsdWVzX2ZpbGwgPSAwKSAlPiVcbiAgZmlsdGVyKGtpbmdkb20gPT0gXCJrX19CYWN0ZXJpYVwiKSAlPiVcbiAgc2VsZWN0KC1raW5nZG9tKVxuXG53cml0ZS50YWJsZShcbiAgd2lkZV9iYWNfc3BfZHQsIFxuICBmaWxlID0gXG4gICAgc3ByaW50ZihcIiVzL2ludGVybWVkaWF0ZV9maWxlcy9UR1ZHMS4xX01QQTRfY29tYmluZWRfYWJ1bmRhbmNlLmJhY3RlcmlhX3NwZWNpZXMud2lkZS50c3ZcIixcbiAgICAgICAgICAgIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSksIFxuICBxdW90ZSA9IEYsIHNlcCA9IFwiXFx0XCIsIHJvdy5uYW1lcyA9IEYsIGNvbC5uYW1lcyA9IFQpXG5ybSh3aWRlX2JhY19zcF9kdClcbmBgYCJ9 -->
+<pre class="r"><code>wide_bac_sp_dt &lt;- long_dt %&gt;%
+  subset( select = c(&quot;kingdom&quot;, &quot;species&quot;, &quot;rel_abundance&quot;, &quot;sampleID&quot;)) %&gt;%
+  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %&gt;%
+  filter(kingdom == &quot;k__Bacteria&quot;) %&gt;%
+  select(-kingdom)
+
+write.table(
+  wide_bac_sp_dt, 
+  file = 
+    sprintf(&quot;%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.bacteria_species.wide.tsv&quot;,
+            find_rstudio_root_file()), 
+  quote = F, sep = &quot;\t&quot;, row.names = F, col.names = T)
+rm(wide_bac_sp_dt)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>make wideform table: virus genera</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud2lkZV92aXJfZ2VfZHQgPC0gbG9uZ19kdCAlPiVcbiAgc3Vic2V0KCBzZWxlY3QgPSBjKFwia2luZ2RvbVwiLCBcImdlbnVzXCIsIFwicmVsX2FidW5kYW5jZVwiLCBcInNhbXBsZUlEXCIpKSAlPiVcbiAgZ3JvdXBfYnkoZ2VudXMsIHNhbXBsZUlEKSAlPiVcbiAgbXV0YXRlKHJlbF9hYnVuZGFuY2UgPSBzdW0ocmVsX2FidW5kYW5jZSkpICU+JVxuICBkaXN0aW5jdCgpICU+JVxuICB1bmdyb3VwKCkgJT4lXG4gIHBpdm90X3dpZGVyKG5hbWVzX2Zyb20gPSBzYW1wbGVJRCwgdmFsdWVzX2Zyb20gPSByZWxfYWJ1bmRhbmNlLCB2YWx1ZXNfZmlsbCA9IDApICU+JVxuICBmaWx0ZXIoa2luZ2RvbSA9PSBcImtfX1ZpcnVzZXNcIikgJT4lXG4gIHNlbGVjdCgta2luZ2RvbSlcblxud3JpdGUudGFibGUoXG4gIHdpZGVfdmlyX2dlX2R0LCBcbiAgZmlsZSA9IFxuICAgIHNwcmludGYoXCIlcy9pbnRlcm1lZGlhdGVfZmlsZXMvVEdWRzEuMV9NUEE0X2NvbWJpbmVkX2FidW5kYW5jZS52aXJ1c19nZW51cy53aWRlLnRzdlwiLCBcbiAgICAgICAgICAgIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSksIFxuICBxdW90ZSA9IEYsIHNlcCA9IFwiXFx0XCIsIHJvdy5uYW1lcyA9IEYsIGNvbC5uYW1lcyA9IFQpXG5ybSh3aWRlX3Zpcl9nZV9kdClcbmBgYCJ9 -->
+<pre class="r"><code>wide_vir_ge_dt &lt;- long_dt %&gt;%
+  subset( select = c(&quot;kingdom&quot;, &quot;genus&quot;, &quot;rel_abundance&quot;, &quot;sampleID&quot;)) %&gt;%
+  group_by(genus, sampleID) %&gt;%
+  mutate(rel_abundance = sum(rel_abundance)) %&gt;%
+  distinct() %&gt;%
+  ungroup() %&gt;%
+  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %&gt;%
+  filter(kingdom == &quot;k__Viruses&quot;) %&gt;%
+  select(-kingdom)
+
+write.table(
+  wide_vir_ge_dt, 
+  file = 
+    sprintf(&quot;%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.virus_genus.wide.tsv&quot;, 
+            find_rstudio_root_file()), 
+  quote = F, sep = &quot;\t&quot;, row.names = F, col.names = T)
+rm(wide_vir_ge_dt)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>make wideform table: bacteria genera</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud2lkZV9iYWNfZ2VfZHQgPC0gbG9uZ19kdCAlPiVcbiAgc3Vic2V0KCBzZWxlY3QgPSBjKFwia2luZ2RvbVwiLCBcImdlbnVzXCIsIFwicmVsX2FidW5kYW5jZVwiLCBcInNhbXBsZUlEXCIpKSAlPiVcbiAgZ3JvdXBfYnkoZ2VudXMsIHNhbXBsZUlEKSAlPiVcbiAgbXV0YXRlKHJlbF9hYnVuZGFuY2UgPSBzdW0ocmVsX2FidW5kYW5jZSkpICU+JVxuICBkaXN0aW5jdCgpICU+JVxuICB1bmdyb3VwKCkgJT4lXG4gIHBpdm90X3dpZGVyKG5hbWVzX2Zyb20gPSBzYW1wbGVJRCwgdmFsdWVzX2Zyb20gPSByZWxfYWJ1bmRhbmNlLCB2YWx1ZXNfZmlsbCA9IDApICU+JVxuICBmaWx0ZXIoa2luZ2RvbSA9PSBcImtfX0JhY3RlcmlhXCIpICU+JVxuICBzZWxlY3QoLWtpbmdkb20pXG5cbndyaXRlLnRhYmxlKFxuICB3aWRlX2JhY19nZV9kdCwgXG4gIGZpbGUgPSBcbiAgICBzcHJpbnRmKFwiJXMvaW50ZXJtZWRpYXRlX2ZpbGVzL1RHVkcxLjFfTVBBNF9jb21iaW5lZF9hYnVuZGFuY2UuYmFjdGVyaWFfZ2VudXMud2lkZS50c3ZcIiwgXG4gICAgICAgICAgICBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkpLCBcbiAgcXVvdGUgPSBGLCBzZXAgPSBcIlxcdFwiLCByb3cubmFtZXMgPSBGLCBjb2wubmFtZXMgPSBUKVxucm0od2lkZV9iYWNfZ2VfZHQpXG5gYGAifQ== -->
+<pre class="r"><code>wide_bac_ge_dt &lt;- long_dt %&gt;%
+  subset( select = c(&quot;kingdom&quot;, &quot;genus&quot;, &quot;rel_abundance&quot;, &quot;sampleID&quot;)) %&gt;%
+  group_by(genus, sampleID) %&gt;%
+  mutate(rel_abundance = sum(rel_abundance)) %&gt;%
+  distinct() %&gt;%
+  ungroup() %&gt;%
+  pivot_wider(names_from = sampleID, values_from = rel_abundance, values_fill = 0) %&gt;%
+  filter(kingdom == &quot;k__Bacteria&quot;) %&gt;%
+  select(-kingdom)
+
+write.table(
+  wide_bac_ge_dt, 
+  file = 
+    sprintf(&quot;%s/intermediate_files/TGVG1.1_MPA4_combined_abundance.bacteria_genus.wide.tsv&quot;, 
+            find_rstudio_root_file()), 
+  quote = F, sep = &quot;\t&quot;, row.names = F, col.names = T)
+rm(wide_bac_ge_dt)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>check archaea prevalence</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubG9uZ19kdCAlPiVcbiAgZmlsdGVyKGtpbmdkb20gPT0gXCJrX19BcmNoYWVhXCIpICU+JVxuICBhcnJhbmdlKGRlc2MocmVsX2FidW5kYW5jZSkpXG5gYGAifQ== -->
+<pre class="r"><code>long_dt %&gt;%
+  filter(kingdom == &quot;k__Archaea&quot;) %&gt;%
+  arrange(desc(rel_abundance))</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiTWFrZSB3aWRlLWZvcm0gdGFibGUgKGJhY3RlcmlhL3ZpcnVzLCBnZW51cy9zcGVjaWVzKSBmcm9tIGJpZyBsb25nIGZvcm0gYWJ1bmRhbmNlIHRhYmxlIgpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sKLS0tCgpsb2FkIHBhY2thZ2VzCmBgYHtyfQpsaWJyYXJ5KGRhdGEudGFibGUpCmxpYnJhcnkoc3RyaW5ncikKbGlicmFyeShkcGx5cikKbGlicmFyeSh0aWR5cikKbGlicmFyeShycHJvanJvb3QpCmBgYAoKCmxvYWQgbG9uZ2Zvcm0gdGFibGUgd2l0aCBhbGwgdGhlIGFidW5kYW5jZSBkYXRhLCBwYXJzZSBhbmQgZmlsdGVyCmBgYHtyfQojIyB1c2luZyBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkgaW4gb3JkZXIgdG8gYXZvaWQgcmVsYXRpdmUgcGF0aHMKbG9uZ19kdCA8LSBmcmVhZCgKICBzcHJpbnRmKCIlcy9kYXRhL21wMTQyX1RHVkcxLjFfTVBBNF9jb21iaW5lZF9hYnVuZGFuY2VfdGFibGVfbG9uZ2Zvcm0xLnRzdiIsCiAgICAgICAgICBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkpLCAKICBzZXAgPSAiXHQiLCBoZWFkZXIgPSBUKQoKIyMgbWFrZSBjb2x1bW5zIGZvciBzcGVjaWVzIGFuZCBnZW51cwpsb25nX2R0IDwtIGxvbmdfZHQgJT4lCiAgbXV0YXRlKHNwZWNpZXMgPSBnc3ViKCIuKnNfXyIsInNfXyIsIGxpbmVhZ2UgKSwgCiAgICAgICAgIGdlbnVzID0gZ3N1YigiLipnX18iLCJnX18iLCBsaW5lYWdlICksIAogICAgICAgICBraW5nZG9tID0gZ3N1YigiXFx8LioiLCAiIiwgbGluZWFnZSkpICU+JQogIG11dGF0ZShnZW51cyA9IGdzdWIoIlxcfHNfXy4qIiwgIiIsIGdlbnVzKSkgJT4lCiAgIyMgZmlsdGVyIG91dCBjb2x1bW5zIG5vdCBiZWluZyBrZXB0IGZvciB3aWRlIGZvcm0KICBzdWJzZXQoc2VsZWN0ID0gYygicmVsX2FidW5kYW5jZSIsICJzYW1wbGVJRCIsICJzcGVjaWVzIiwgImdlbnVzIiwgImtpbmdkb20iKSkKCmxvbmdfZHQkc2FtcGxlSUQgPC0gYXMuY2hhcmFjdGVyKGxvbmdfZHQkc2FtcGxlSUQpCgpgYGAKCm1ha2Ugd2lkZWZvcm0gdGFibGU6IHZpcnVzIHNwZWNpZXMKYGBge3J9CndpZGVfdmlyX3NwX2R0IDwtIGxvbmdfZHQgJT4lCiAgc3Vic2V0KCBzZWxlY3QgPSBjKCJraW5nZG9tIiwgInNwZWNpZXMiLCAicmVsX2FidW5kYW5jZSIsICJzYW1wbGVJRCIpKSAlPiUKICBwaXZvdF93aWRlcihuYW1lc19mcm9tID0gc2FtcGxlSUQsIHZhbHVlc19mcm9tID0gcmVsX2FidW5kYW5jZSwgdmFsdWVzX2ZpbGwgPSAwKSAlPiUKICBmaWx0ZXIoa2luZ2RvbSA9PSAia19fVmlydXNlcyIpICU+JQogIHNlbGVjdCgta2luZ2RvbSkKCndyaXRlLnRhYmxlKHdpZGVfdmlyX3NwX2R0LCBmaWxlID0gc3ByaW50ZigiJXMvaW50ZXJtZWRpYXRlX2ZpbGVzL1RHVkcxLjFfTVBBNF9jb21iaW5lZF9hYnVuZGFuY2UudmlydXNfc3BlY2llcy53aWRlLnRzdiIsIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSksIHF1b3RlID0gRiwgc2VwID0gIlx0Iiwgcm93Lm5hbWVzID0gRiwgY29sLm5hbWVzID0gVCkKcm0od2lkZV92aXJfc3BfZHQpCmBgYAoKbWFrZSB3aWRlZm9ybSB0YWJsZTogYmFjdGVyaWEgc3BlY2llcwpgYGB7cn0Kd2lkZV9iYWNfc3BfZHQgPC0gbG9uZ19kdCAlPiUKICBzdWJzZXQoIHNlbGVjdCA9IGMoImtpbmdkb20iLCAic3BlY2llcyIsICJyZWxfYWJ1bmRhbmNlIiwgInNhbXBsZUlEIikpICU+JQogIHBpdm90X3dpZGVyKG5hbWVzX2Zyb20gPSBzYW1wbGVJRCwgdmFsdWVzX2Zyb20gPSByZWxfYWJ1bmRhbmNlLCB2YWx1ZXNfZmlsbCA9IDApICU+JQogIGZpbHRlcihraW5nZG9tID09ICJrX19CYWN0ZXJpYSIpICU+JQogIHNlbGVjdCgta2luZ2RvbSkKCndyaXRlLnRhYmxlKAogIHdpZGVfYmFjX3NwX2R0LCAKICBmaWxlID0gCiAgICBzcHJpbnRmKCIlcy9pbnRlcm1lZGlhdGVfZmlsZXMvVEdWRzEuMV9NUEE0X2NvbWJpbmVkX2FidW5kYW5jZS5iYWN0ZXJpYV9zcGVjaWVzLndpZGUudHN2IiwKICAgICAgICAgICAgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKSwgCiAgcXVvdGUgPSBGLCBzZXAgPSAiXHQiLCByb3cubmFtZXMgPSBGLCBjb2wubmFtZXMgPSBUKQpybSh3aWRlX2JhY19zcF9kdCkKYGBgCgptYWtlIHdpZGVmb3JtIHRhYmxlOiB2aXJ1cyBnZW5lcmEKYGBge3J9CndpZGVfdmlyX2dlX2R0IDwtIGxvbmdfZHQgJT4lCiAgc3Vic2V0KCBzZWxlY3QgPSBjKCJraW5nZG9tIiwgImdlbnVzIiwgInJlbF9hYnVuZGFuY2UiLCAic2FtcGxlSUQiKSkgJT4lCiAgZ3JvdXBfYnkoZ2VudXMsIHNhbXBsZUlEKSAlPiUKICBtdXRhdGUocmVsX2FidW5kYW5jZSA9IHN1bShyZWxfYWJ1bmRhbmNlKSkgJT4lCiAgZGlzdGluY3QoKSAlPiUKICB1bmdyb3VwKCkgJT4lCiAgcGl2b3Rfd2lkZXIobmFtZXNfZnJvbSA9IHNhbXBsZUlELCB2YWx1ZXNfZnJvbSA9IHJlbF9hYnVuZGFuY2UsIHZhbHVlc19maWxsID0gMCkgJT4lCiAgZmlsdGVyKGtpbmdkb20gPT0gImtfX1ZpcnVzZXMiKSAlPiUKICBzZWxlY3QoLWtpbmdkb20pCgp3cml0ZS50YWJsZSgKICB3aWRlX3Zpcl9nZV9kdCwgCiAgZmlsZSA9IAogICAgc3ByaW50ZigiJXMvaW50ZXJtZWRpYXRlX2ZpbGVzL1RHVkcxLjFfTVBBNF9jb21iaW5lZF9hYnVuZGFuY2UudmlydXNfZ2VudXMud2lkZS50c3YiLCAKICAgICAgICAgICAgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKSwgCiAgcXVvdGUgPSBGLCBzZXAgPSAiXHQiLCByb3cubmFtZXMgPSBGLCBjb2wubmFtZXMgPSBUKQpybSh3aWRlX3Zpcl9nZV9kdCkKYGBgCgptYWtlIHdpZGVmb3JtIHRhYmxlOiBiYWN0ZXJpYSBnZW5lcmEKYGBge3J9CndpZGVfYmFjX2dlX2R0IDwtIGxvbmdfZHQgJT4lCiAgc3Vic2V0KCBzZWxlY3QgPSBjKCJraW5nZG9tIiwgImdlbnVzIiwgInJlbF9hYnVuZGFuY2UiLCAic2FtcGxlSUQiKSkgJT4lCiAgZ3JvdXBfYnkoZ2VudXMsIHNhbXBsZUlEKSAlPiUKICBtdXRhdGUocmVsX2FidW5kYW5jZSA9IHN1bShyZWxfYWJ1bmRhbmNlKSkgJT4lCiAgZGlzdGluY3QoKSAlPiUKICB1bmdyb3VwKCkgJT4lCiAgcGl2b3Rfd2lkZXIobmFtZXNfZnJvbSA9IHNhbXBsZUlELCB2YWx1ZXNfZnJvbSA9IHJlbF9hYnVuZGFuY2UsIHZhbHVlc19maWxsID0gMCkgJT4lCiAgZmlsdGVyKGtpbmdkb20gPT0gImtfX0JhY3RlcmlhIikgJT4lCiAgc2VsZWN0KC1raW5nZG9tKQoKd3JpdGUudGFibGUoCiAgd2lkZV9iYWNfZ2VfZHQsIAogIGZpbGUgPSAKICAgIHNwcmludGYoIiVzL2ludGVybWVkaWF0ZV9maWxlcy9UR1ZHMS4xX01QQTRfY29tYmluZWRfYWJ1bmRhbmNlLmJhY3RlcmlhX2dlbnVzLndpZGUudHN2IiwgCiAgICAgICAgICAgIGZpbmRfcnN0dWRpb19yb290X2ZpbGUoKSksIAogIHF1b3RlID0gRiwgc2VwID0gIlx0Iiwgcm93Lm5hbWVzID0gRiwgY29sLm5hbWVzID0gVCkKcm0od2lkZV9iYWNfZ2VfZHQpCmBgYAoKY2hlY2sgYXJjaGFlYSBwcmV2YWxlbmNlCmBgYHtyfQpsb25nX2R0ICU+JQogIGZpbHRlcihraW5nZG9tID09ICJrX19BcmNoYWVhIikgJT4lCiAgYXJyYW5nZShkZXNjKHJlbF9hYnVuZGFuY2UpKQpgYGAKCgoKCgoKCg==</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiTWFrZSB3aWRlLWZvcm0gdGFibGUgKGJhY3RlcmlhL3ZpcnVzLCBnZW51cy9zcGVjaWVzKSBmcm9tIGJpZyBsb25nIGZvcm0gYWJ1bmRhbmNlIHRhYmxlIgpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sKLS0tCgpsb2FkIHBhY2thZ2VzCmBgYHtyfQpsaWJyYXJ5KGRhdGEudGFibGUpCmxpYnJhcnkoc3RyaW5ncikKbGlicmFyeShkcGx5cikKbGlicmFyeSh0aWR5cikKbGlicmFyeShycHJvanJvb3QpCmBgYAoKCmxvYWQgbG9uZ2Zvcm0gdGFibGUgd2l0aCBhbGwgdGhlIGFidW5kYW5jZSBkYXRhLCBwYXJzZSBhbmQgZmlsdGVyCmBgYHtyfQojIyB1c2luZyBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkgaW4gb3JkZXIgdG8gYXZvaWQgcmVsYXRpdmUgcGF0aHMKbG9uZ19kdCA8LSBmcmVhZCgKICBzcHJpbnRmKCIlcy9kYXRhL21wMTQyX1RHVkcxLjFfTVBBNF9jb21iaW5lZF9hYnVuZGFuY2VfdGFibGVfbG9uZ2Zvcm0xLnRzdiIsCiAgICAgICAgICBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkpLAogIHNlcCA9ICJcdCIsIGhlYWRlciA9IFQpCgojIyBtYWtlIGNvbHVtbnMgZm9yIHNwZWNpZXMgYW5kIGdlbnVzCmxvbmdfZHQgPC0gbG9uZ19kdCAlPiUKICBtdXRhdGUoc3BlY2llcyA9IGdzdWIoIi4qc19fIiwic19fIiwgbGluZWFnZSApLCAKICAgICAgICAgZ2VudXMgPSBnc3ViKCIuKmdfXyIsImdfXyIsIGxpbmVhZ2UgKSwgCiAgICAgICAgIGtpbmdkb20gPSBnc3ViKCJcXHwuKiIsICIiLCBsaW5lYWdlKSkgJT4lCiAgbXV0YXRlKGdlbnVzID0gZ3N1YigiXFx8c19fLioiLCAiIiwgZ2VudXMpKSAlPiUKICAjIyBmaWx0ZXIgb3V0IGNvbHVtbnMgbm90IGJlaW5nIGtlcHQgZm9yIHdpZGUgZm9ybQogIHN1YnNldChzZWxlY3QgPSBjKCJyZWxfYWJ1bmRhbmNlIiwgInNhbXBsZUlEIiwgInNwZWNpZXMiLCAiZ2VudXMiLCAia2luZ2RvbSIpKQoKbG9uZ19kdCRzYW1wbGVJRCA8LSBhcy5jaGFyYWN0ZXIobG9uZ19kdCRzYW1wbGVJRCkKCmBgYAoKbWFrZSB3aWRlZm9ybSB0YWJsZTogdmlydXMgc3BlY2llcwpgYGB7cn0Kd2lkZV92aXJfc3BfZHQgPC0gbG9uZ19kdCAlPiUKICBzdWJzZXQoIHNlbGVjdCA9IGMoImtpbmdkb20iLCAic3BlY2llcyIsICJyZWxfYWJ1bmRhbmNlIiwgInNhbXBsZUlEIikpICU+JQogIHBpdm90X3dpZGVyKG5hbWVzX2Zyb20gPSBzYW1wbGVJRCwgdmFsdWVzX2Zyb20gPSByZWxfYWJ1bmRhbmNlLCB2YWx1ZXNfZmlsbCA9IDApICU+JQogIGZpbHRlcihraW5nZG9tID09ICJrX19WaXJ1c2VzIikgJT4lCiAgc2VsZWN0KC1raW5nZG9tKQoKd3JpdGUudGFibGUod2lkZV92aXJfc3BfZHQsIGZpbGUgPSBzcHJpbnRmKCIlcy9pbnRlcm1lZGlhdGVfZmlsZXMvVEdWRzEuMV9NUEE0X2NvbWJpbmVkX2FidW5kYW5jZS52aXJ1c19zcGVjaWVzLndpZGUudHN2IiwgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKSwgcXVvdGUgPSBGLCBzZXAgPSAiXHQiLCByb3cubmFtZXMgPSBGLCBjb2wubmFtZXMgPSBUKQpybSh3aWRlX3Zpcl9zcF9kdCkKYGBgCgptYWtlIHdpZGVmb3JtIHRhYmxlOiBiYWN0ZXJpYSBzcGVjaWVzCmBgYHtyfQp3aWRlX2JhY19zcF9kdCA8LSBsb25nX2R0ICU+JQogIHN1YnNldCggc2VsZWN0ID0gYygia2luZ2RvbSIsICJzcGVjaWVzIiwgInJlbF9hYnVuZGFuY2UiLCAic2FtcGxlSUQiKSkgJT4lCiAgcGl2b3Rfd2lkZXIobmFtZXNfZnJvbSA9IHNhbXBsZUlELCB2YWx1ZXNfZnJvbSA9IHJlbF9hYnVuZGFuY2UsIHZhbHVlc19maWxsID0gMCkgJT4lCiAgZmlsdGVyKGtpbmdkb20gPT0gImtfX0JhY3RlcmlhIikgJT4lCiAgc2VsZWN0KC1raW5nZG9tKQoKd3JpdGUudGFibGUoCiAgd2lkZV9iYWNfc3BfZHQsIAogIGZpbGUgPSAKICAgIHNwcmludGYoIiVzL2ludGVybWVkaWF0ZV9maWxlcy9UR1ZHMS4xX01QQTRfY29tYmluZWRfYWJ1bmRhbmNlLmJhY3RlcmlhX3NwZWNpZXMud2lkZS50c3YiLAogICAgICAgICAgICBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkpLCAKICBxdW90ZSA9IEYsIHNlcCA9ICJcdCIsIHJvdy5uYW1lcyA9IEYsIGNvbC5uYW1lcyA9IFQpCnJtKHdpZGVfYmFjX3NwX2R0KQpgYGAKCm1ha2Ugd2lkZWZvcm0gdGFibGU6IHZpcnVzIGdlbmVyYQpgYGB7cn0Kd2lkZV92aXJfZ2VfZHQgPC0gbG9uZ19kdCAlPiUKICBzdWJzZXQoIHNlbGVjdCA9IGMoImtpbmdkb20iLCAiZ2VudXMiLCAicmVsX2FidW5kYW5jZSIsICJzYW1wbGVJRCIpKSAlPiUKICBncm91cF9ieShnZW51cywgc2FtcGxlSUQpICU+JQogIG11dGF0ZShyZWxfYWJ1bmRhbmNlID0gc3VtKHJlbF9hYnVuZGFuY2UpKSAlPiUKICBkaXN0aW5jdCgpICU+JQogIHVuZ3JvdXAoKSAlPiUKICBwaXZvdF93aWRlcihuYW1lc19mcm9tID0gc2FtcGxlSUQsIHZhbHVlc19mcm9tID0gcmVsX2FidW5kYW5jZSwgdmFsdWVzX2ZpbGwgPSAwKSAlPiUKICBmaWx0ZXIoa2luZ2RvbSA9PSAia19fVmlydXNlcyIpICU+JQogIHNlbGVjdCgta2luZ2RvbSkKCndyaXRlLnRhYmxlKAogIHdpZGVfdmlyX2dlX2R0LCAKICBmaWxlID0gCiAgICBzcHJpbnRmKCIlcy9pbnRlcm1lZGlhdGVfZmlsZXMvVEdWRzEuMV9NUEE0X2NvbWJpbmVkX2FidW5kYW5jZS52aXJ1c19nZW51cy53aWRlLnRzdiIsIAogICAgICAgICAgICBmaW5kX3JzdHVkaW9fcm9vdF9maWxlKCkpLCAKICBxdW90ZSA9IEYsIHNlcCA9ICJcdCIsIHJvdy5uYW1lcyA9IEYsIGNvbC5uYW1lcyA9IFQpCnJtKHdpZGVfdmlyX2dlX2R0KQpgYGAKCm1ha2Ugd2lkZWZvcm0gdGFibGU6IGJhY3RlcmlhIGdlbmVyYQpgYGB7cn0Kd2lkZV9iYWNfZ2VfZHQgPC0gbG9uZ19kdCAlPiUKICBzdWJzZXQoIHNlbGVjdCA9IGMoImtpbmdkb20iLCAiZ2VudXMiLCAicmVsX2FidW5kYW5jZSIsICJzYW1wbGVJRCIpKSAlPiUKICBncm91cF9ieShnZW51cywgc2FtcGxlSUQpICU+JQogIG11dGF0ZShyZWxfYWJ1bmRhbmNlID0gc3VtKHJlbF9hYnVuZGFuY2UpKSAlPiUKICBkaXN0aW5jdCgpICU+JQogIHVuZ3JvdXAoKSAlPiUKICBwaXZvdF93aWRlcihuYW1lc19mcm9tID0gc2FtcGxlSUQsIHZhbHVlc19mcm9tID0gcmVsX2FidW5kYW5jZSwgdmFsdWVzX2ZpbGwgPSAwKSAlPiUKICBmaWx0ZXIoa2luZ2RvbSA9PSAia19fQmFjdGVyaWEiKSAlPiUKICBzZWxlY3QoLWtpbmdkb20pCgp3cml0ZS50YWJsZSgKICB3aWRlX2JhY19nZV9kdCwgCiAgZmlsZSA9IAogICAgc3ByaW50ZigiJXMvaW50ZXJtZWRpYXRlX2ZpbGVzL1RHVkcxLjFfTVBBNF9jb21iaW5lZF9hYnVuZGFuY2UuYmFjdGVyaWFfZ2VudXMud2lkZS50c3YiLCAKICAgICAgICAgICAgZmluZF9yc3R1ZGlvX3Jvb3RfZmlsZSgpKSwgCiAgcXVvdGUgPSBGLCBzZXAgPSAiXHQiLCByb3cubmFtZXMgPSBGLCBjb2wubmFtZXMgPSBUKQpybSh3aWRlX2JhY19nZV9kdCkKYGBgCgpjaGVjayBhcmNoYWVhIHByZXZhbGVuY2UKYGBge3J9CmxvbmdfZHQgJT4lCiAgZmlsdGVyKGtpbmdkb20gPT0gImtfX0FyY2hhZWEiKSAlPiUKICBhcnJhbmdlKGRlc2MocmVsX2FidW5kYW5jZSkpCmBgYAoKCgoKCgoK</div>
 
 
 

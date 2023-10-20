@@ -18,7 +18,7 @@ load longform table with all the abundance data, parse and filter
 ## using find_rstudio_root_file() in order to avoid relative paths
 long_dt <- fread(
   sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
-          find_rstudio_root_file()), 
+          find_rstudio_root_file()),
   sep = "\t", header = T)
 
 ## make columns for species and genus
