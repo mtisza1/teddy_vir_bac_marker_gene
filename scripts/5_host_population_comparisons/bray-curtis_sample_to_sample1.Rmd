@@ -226,6 +226,16 @@ ggsave(file = sprintf("%s/charts/virome_bray_curtis_T1D_NCC_paired.pdf",
                  width = 2.5, height = 3.5)  
 ```
 
+```{r}
+vir_bray_sum_subj  %>%
+  group_by(pair_num) %>%
+  filter(n() == 2) %>%
+  ungroup() %>%
+  group_by(T1D) %>%
+  summarize(avg_bray_t1d = mean(average_bray),
+            n = n_distinct(mask_id1))
+```
+
 
 
 

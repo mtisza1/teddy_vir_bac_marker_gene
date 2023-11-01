@@ -1,0 +1,264 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+load packages
+
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(vegan)
+library(ggpubr)
+library(rstatix)
+library(cowplot)
+
+```
+
+set paths and filenames
+
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
+
+T1D_groups_file=sprintf("%s/data/MP142_CASE_CNTRL_T1D_LIST1.csv", 
+                        find_rstudio_root_file())
+
+```
+
+load long table and metadata, merge
+
+```{r}
+long_dt <- fread(sprintf("%s", long_table), sep = "\t", header = T) %>%
+  select(sampleID, rel_abundance, lineage) %>%
+  mutate(sampleID = as.character(sampleID),
+         kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
+                             grepl("k__Vir", lineage) ~ "Virus",
+                             grepl("k__Ar", lineage) ~ "Archea",
+                             grepl("k__Euk", lineage) ~ "Eukaryota",
+                             TRUE ~ "other"))
+
+groups_dt <- fread(T1D_groups_file, sep = ",", header = T) %>%
+  select(c(mask_id, case_ind))
+
+meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+  select(-V1) %>%
+  mutate(sample = as.character(sample))
+
+merge_full_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y ="sample")
+
+## filtering down to only subject from TEDDY T1D groups
+
+merge_dt <- merge(merge_full_dt, groups_dt, by = "mask_id")
+
+#merge_dt <- merge_full_dt
+
+rm(merge_full_dt)
+```
+
+```{r}
+meta_groups_dt <- merge(meta_dt, groups_dt, by = "mask_id")
+```
+
+```{r}
+meta_groups_dt %>%
+  group_by(mask_id) %>%
+  summarize(case_ind,
+            T1D,
+            avg_age = mean(age_days)) %>%
+  ggplot(aes(x = T1D, y = avg_age)) +
+  geom_boxplot() +
+  geom_point()
+```
+
+```{r}
+meta_groups_dt %>%
+  ggplot(aes(x = T1D, y = age_days)) +
+  geom_boxplot() +
+  geom_jitter(height = 0, width = 0.05, alpha = 0.3)
+```
+
+wide format, bray-curtis, VIROME
+
+```{r}
+
+mask_id_list <- as.list(
+  merge_dt %>% distinct(mask_id)
+)
+
+big_bray_long <- data.table(sample_info1=character(), 
+                            sample_info2=character(), 
+                            value=numeric())
+
+## big for loop to do each subject
+for (subjectq in mask_id_list[1]$mask_id) {
+  temp_long_dt <- merge_dt %>%
+    filter(mask_id == subjectq)
+  
+  temp_long_dt$sample_info <- str_c(temp_long_dt$sampleID, "@", 
+                                    temp_long_dt$mask_id, "@", 
+                                    temp_long_dt$age_days)
+  
+  temp_long_dt <- temp_long_dt %>%
+    select(c(sample_info, rel_abundance, lineage, kingdom)) %>%
+    distinct()
+  if(nrow(temp_long_dt) > 1){
+    wide_virome_temp_dt <- temp_long_dt %>%
+      filter(kingdom == "Virus") %>%
+      select(-kingdom) %>%
+        pivot_wider(names_from = lineage, 
+                  values_from = rel_abundance, 
+                  values_fill = 0)
+    sample_info_l <- wide_virome_temp_dt$sample_info
+  
+    wide_virome_temp_dt <- wide_virome_temp_dt %>% select(-sample_info)
+    
+    bray_curtis_dist <- vegdist(wide_virome_temp_dt, method="bray")
+    
+    bray_curtis_mat <- as.matrix(bray_curtis_dist)
+    
+    bray_curtis_df <- as.data.frame(bray_curtis_mat)
+    
+    colnames(bray_curtis_df) <- sample_info_l
+    rownames(bray_curtis_df) <- sample_info_l
+    bray_curtis_df$sample_info1 <- rownames(bray_curtis_df)
+  
+    bray_long <- melt(setDT(bray_curtis_df), 
+                      id.vars = c("sample_info1"), 
+                      variable.name = "sample_info2") %>%
+      filter(sample_info1 != sample_info2)
+    big_bray_long <- rbind(big_bray_long, bray_long)
+  }
+}
+
+big_bray_long <- big_bray_long[, 
+                               c("sampleID1", "mask_id1", "day_of_life1") 
+                               := tstrsplit(sample_info1, "@", fixed=TRUE)]
+
+big_bray_long <- big_bray_long[, 
+                               c("sampleID2", "mask_id2", "day_of_life2") 
+                               := tstrsplit(sample_info2, "@", fixed=TRUE)] %>%
+  select(c(sampleID1, sampleID2, mask_id1, day_of_life1, day_of_life2, value)) %>%
+  mutate(days_apart = as.numeric(day_of_life2) - as.numeric(day_of_life1)) %>%
+  filter(days_apart >= 1) 
+  
+big_bray_long <- big_bray_long %>%
+  rename(bray_curtis = value)
+```
+
+```{r}
+big_bray_long %>% distinct(mask_id1)
+```
+
+
+```{r}
+
+t1d_met_dt <- meta_dt %>%
+  distinct(mask_id, T1D)
+  
+
+t1d_met_dt$mask_id <- as.character(t1d_met_dt$mask_id)
+
+big_bray_long$mask_id1 <- as.character(big_bray_long$mask_id1)
+
+bray_meta_dt <- merge(big_bray_long, t1d_met_dt, 
+                      by.x = "mask_id1", by.y = "mask_id")
+```
+
+```{r}
+bray_next <- bray_meta_dt %>%
+  group_by(sampleID1) %>%
+  summarize(T1D,
+            day_of_life1,
+            mask_id1,
+            next_sample_days = min(days_apart)) %>%
+  ungroup() %>%
+  distinct()
+
+bray_next %>%
+  group_by(mask_id1) %>%
+  summarize(T1D,
+            avg_to_next = mean(next_sample_days)) %>%
+  ggplot(aes(x = T1D, y = avg_to_next)) +
+  geom_boxplot(outlier.shape = NA) +
+  #geom_jitter(height = 0, width = 0.05, alpha = 0.3) +
+  stat_compare_means()
+```
+```{r}
+
+bray_next %>%
+  group_by(mask_id1) %>%
+  summarize(T1D,
+            avg_to_next = mean(next_sample_days)) %>%
+  ungroup() %>%
+  group_by(T1D) %>%
+  summarize(avg_days = mean(avg_to_next),
+            n = n_distinct(mask_id1))
+
+
+bray_next %>%
+  group_by(T1D) %>%
+  summarize(avg_days = mean(next_sample_days),
+            n = n_distinct(mask_id1))
+```
+
+```{r}
+round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
+```
+
+```{r}
+
+
+bray_next %>%
+  mutate(day_of_life1 = as.numeric(day_of_life1),
+         rounded_DOL =  round_any(day_of_life1, 100)) %>%
+  filter(rounded_DOL <= 1400) %>%
+  group_by(T1D, rounded_DOL) %>%
+  summarize(avg_days = mean(next_sample_days),
+            n = n_distinct(mask_id1)) %>%
+  arrange(rounded_DOL)
+```
+
+```{r}
+bray_meta_dt %>%
+  filter(days_apart >=39 & days_apart <= 45) %>%
+  ggscatter(x = "days_apart", y = "bray_curtis", add = "reg.line",
+            color = "purple", alpha = 0.7) +
+  stat_cor(label.x = 38, label.y = 1.2) +
+  stat_regline_equation(label.x = 38, label.y = 1.1) +
+  theme_bw()
+
+
+#  ggplot(aes(x = days_apart, y = bray_curtis)) +
+#  geom_point() +
+#  stat_regline_equation(color = "blue")
+```
+
+
+```{r}
+bray_meta_dt %>%
+  ggplot(aes(x = days_apart, y = bray_curtis)) +
+  geom_point(color = "purple", alpha = 0.2) +
+  geom_smooth(color = "black") +
+  theme_bw()
+
+```
+
+
+```{r}
+bray_meta_dt %>%
+  filter(days_apart >=36 & days_apart <= 50) %>%
+  ggplot(aes(x = factor(days_apart), y = bray_curtis)) +
+  geom_boxplot() +
+  stat_compare_means()
+```
+
+
+
