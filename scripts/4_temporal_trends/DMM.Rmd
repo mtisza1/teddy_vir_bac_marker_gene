@@ -1,0 +1,82 @@
+---
+title: "Dirichlet Multinomial w/ abundant SGBs"
+output: html_notebook
+---
+
+load libraries
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(wesanderson)
+library(DirichletMultinomial)
+```
+
+set paths and filenames
+
+```{r}
+### files
+subset_table=sprintf("%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv",
+                     find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
+iphop_table=sprintf("%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv",
+                    find_rstudio_root_file())
+
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+
+```
+
+get all abundance data and merge/subset to abundant SGBs
+
+```{r}
+long_dt <- fread(long_table, header = T, sep = "\t") %>%
+  mutate(species = gsub(".*s__","s__", lineage ))
+
+SGB_subset_dt <- fread(subset_table, header = T, sep = "\t") %>%
+  distinct(species, assignment)
+
+sample_subset_dt <- merge(long_dt, SGB_subset_dt, by = "species")
+```
+
+```{r}
+wide_subset_dt <- sample_subset_dt %>%
+  select(sampleID, rel_abundance, species) %>%
+  pivot_wider(names_from = sampleID, 
+              values_from = rel_abundance, 
+              values_fill = 0) 
+
+wide_subset_df <- as.data.frame(wide_subset_dt) %>%
+  select(-species)
+
+rownames(wide_subset_df) <- wide_subset_dt$species
+
+wide_t_df <- t(wide_subset_df)
+
+rm(wide_subset_df, wide_subset_dt)
+
+## rounding to integers may make processing easier
+wide_t_df <- round(wide_t_df*10000)
+```
+
+```{r}
+DMM_Fits <- parallel::mclapply(1:10, DirichletMultinomial::dmn, count=wide_t_df, mc.cores=10)
+```
+
+```{r}
+tbl <- plyr::ldply(DMM_Fits, function(x) { attributes(x)$goodnessOfFit })
+tbl <- cbind(data.frame(Clusters=1:nrow(tbl)), tbl)
+write.csv(tbl, file=sprintf("%s/intermediate_files/DMM_Stats.csv", find_rstudio_root_file()), row.names=FALSE)
+
+tbl <- t(plyr::ldply(DMM_Fits, function(x) { apply(attributes(x)$group, 1, which.max) }))
+colnames(tbl) <- 1:10
+write.csv(tbl, file=sprintf("%s/intermediate_files/DMM_Clusters.csv", find_rstudio_root_file()))
+```
+
+
+
+

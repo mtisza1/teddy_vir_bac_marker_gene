@@ -5,3 +5,5 @@ intermediate_files/
 .Rdata
 .Rhistory
 .Rproj.user/
+.Rprofile
+
