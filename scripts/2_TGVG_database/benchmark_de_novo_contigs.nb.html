@@ -1895,9 +1895,10 @@ mm_features_dt &lt;- fread(marker_magu_features, header = T, sep = &quot;\t&quot
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubWF0Y2hfZHQgPC0gbWVyZ2UobG9uZ19kdCwgZGVfbm92b19mX2R0LFxuICAgICAgYnkgPSBjKFwic2FtcGxlSURcIiwgXCJzcGVjaWVzXCIpKSAlPiVcbiAgc2VsZWN0KGMoc2FtcGxlSUQsIHJlbF9hYnVuZGFuY2UsIHNwZWNpZXMsIGBtYXJrZXItbWFndV9nZW5lc2ApKVxuYGBgIn0= -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubWF0Y2hfZHQgPC0gbWVyZ2UobG9uZ19kdCwgZGVfbm92b19mX2R0LFxuICAgICAgYnkgPSBjKFwic2FtcGxlSURcIiwgXCJzcGVjaWVzXCIpLFxuICAgICAgYWxsLnkgPSBUKSAlPiVcbiAgc2VsZWN0KGMoc2FtcGxlSUQsIHJlbF9hYnVuZGFuY2UsIHNwZWNpZXMsIGBtYXJrZXItbWFndV9nZW5lc2ApKVxuYGBgIn0= -->
 <pre class="r"><code>match_dt &lt;- merge(long_dt, de_novo_f_dt,
-      by = c(&quot;sampleID&quot;, &quot;species&quot;)) %&gt;%
+      by = c(&quot;sampleID&quot;, &quot;species&quot;),
+      all.y = T) %&gt;%
   select(c(sampleID, rel_abundance, species, `marker-magu_genes`))</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
