@@ -50,6 +50,22 @@ meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
 meta_dt$sample <- as.character(meta_dt$sample)
 ```
 
+Summarize kingdom-level relative abundance and read count, plot
+```{r}
+sum_dt <- long_w_read_dt %>%
+  group_by(sampleID, kingdom) %>%
+  filter(kingdom != "Eukaryota",
+         kingdom != "Archaea") %>%
+  summarize(n = n(),
+            total_rel_abundance = sum(rel_abundance),
+            Reads = first(filtered_reads)) %>%
+  pivot_wider(names_from = kingdom, values_from = c(n, total_rel_abundance), values_fill = 0)
+
+merge_dt <- merge(sum_dt, meta_dt,
+                  by.x = "sampleID", by.y = "sample")
+```
+
+
 Basic correlation, # virus SGBS vs # bacteria SGBs
 ```{r}
 vir_vs_bacp <- long_w_read_dt %>%
@@ -115,21 +131,6 @@ ggsave(readp,
                  width = 5, height = 3.5)
 ```
 
-Summarize kingdom-level relative abundance and read count, plot
-```{r}
-sum_dt <- long_w_read_dt %>%
-  group_by(sampleID, kingdom) %>%
-  filter(kingdom != "Eukaryota",
-         kingdom != "Archaea") %>%
-  summarize(n = n(),
-            total_rel_abundance = sum(rel_abundance),
-            Reads = first(filtered_reads)) %>%
-  pivot_wider(names_from = kingdom, values_from = c(n, total_rel_abundance), values_fill = 0)
-
-merge_dt <- merge(sum_dt, meta_dt, by.x = "sampleID", by.y = "sample")
-
-```
-
 
 
 ratio of virus SGB:bacteria SGB vs reads
@@ -145,6 +146,8 @@ ratiop <- merge_dt %>%
   scale_color_gradient2(low = "yellow", mid = "purple", 
                         high = "grey10", midpoint = 1000, 
                         name ="day of life") +
+  stat_cor(label.x = 2e7, label.y = 6) +
+  stat_regline_equation(label.x = 2e7, label.y = 5) +
   labs(x = "# of Reads", 
        y = "Ratio of \n(Virus SGBs:Bacteria SGBs)")
 

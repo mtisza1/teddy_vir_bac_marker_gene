@@ -123,7 +123,22 @@ ggsave(file =
 
 ```
 
+check for perfect correlations
+```{r}
+cor_long %>%
+  mutate(predict_match = 
+           case_when(Virus_host_genus == Bacteria_genus ~ "matching",
+                     TRUE ~ "other")) %>%
+  ggplot(aes(x = predict_match, y = correlation)) +
+  geom_violin(aes(fill = predict_match)) +
+  #geom_jitter(height = 0, width = 0.2, alpha = 0.1) +
+  geom_boxplot(width = 0.1) +
+  stat_compare_means(method = "t.test")
+```
 
+```{r}
+unique(cor_long$Bacteria_genus)
+```
 
 
 
