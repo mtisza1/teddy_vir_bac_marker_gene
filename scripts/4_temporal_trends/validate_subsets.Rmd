@@ -1,0 +1,153 @@
+---
+title: "Validate temporal subsets via clustering"
+output: html_notebook
+---
+
+load libraries
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(wesanderson)
+library(factoextra)
+library(FactoMineR)
+library(nationalparkcolors)
+
+```
+
+set paths and filenames
+
+```{r}
+### files
+subset_table=sprintf("%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv",
+                     find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
+#iphop_table=sprintf("%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv",
+#                    find_rstudio_root_file())
+
+#long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+#                   find_rstudio_root_file())
+
+```
+
+get subset table
+```{r}
+subset_dt <- fread(subset_table, header = T, sep = "\t")
+
+
+```
+
+species -> assignment labels
+```{r}
+species_sub_dt <- subset_dt %>%
+  distinct(species, assignment)
+```
+
+make wider
+```{r}
+subset_self_wide_dt <- subset_dt %>%
+  select(c(species, rounded_DOL, self_rel_abund)) %>%
+  pivot_wider(names_from = rounded_DOL, 
+              values_from = self_rel_abund, 
+              values_fill = 0)
+
+
+species_l <- subset_self_wide_dt$species
+
+
+subset_self_wide_dt <- subset_self_wide_dt %>% select(-species)
+
+
+```
+
+calc PCA
+```{r}
+subset_prcomp1 <- prcomp(subset_self_wide_dt)
+
+subset_PCA_dt <-as.data.frame(subset_prcomp1$x[,1:5])
+
+setDT(subset_PCA_dt)
+
+subset_PCA_dt$species <- species_l
+
+
+subset_assign_PCA_dt <- merge(subset_PCA_dt, species_sub_dt,
+                              by = "species")
+```
+
+plot PCA
+```{r}
+subset_assign_PCA_dt %>%
+  ggplot(aes(x = PC1, y = PC2, color = assignment)) +
+  geom_point(alpa = 0.3) +
+  theme_bw()
+```
+
+calc tSNE
+```{r}
+emb_bac <- Rtsne::Rtsne(subset_prcomp1$x[,1:10], perplexity = 20)
+
+embb_bac <- as.data.frame(emb_bac$Y)
+
+setDT(embb_bac)
+
+embb_bac$species <- species_l
+
+
+subset_assign_tSNE_dt <- merge(embb_bac, species_sub_dt,
+                              by = "species")
+```
+
+```{r}
+#wes_palette("Darjeeling1", 8, type = "continuous")
+pal <- park_palette("Arches")
+coul <- colorRampPalette(pal)(8)
+
+subset_assign_tSNE_dt %>%
+  ggplot(aes(x = V1, y = V2, color = assignment)) +
+  geom_point(alpha = 0.95) +
+  theme_bw() +
+  scale_color_manual(values = coul)
+```
+check stats on PCA
+```{r}
+subset_pca <- PCA(subset_self_wide_dt,  graph = FALSE)
+# Visualize eigenvalues/variances
+fviz_screeplot(subset_pca, addlabels = TRUE, ylim = c(0, 41))
+```
+
+```{r}
+# Extract the results for variables
+var <- get_pca_var(subset_pca)
+# Contributions of variables to PC1
+fviz_contrib(subset_pca, choice = "var", axes = 1, top = 10)
+# Contributions of variables to PC2
+fviz_contrib(subset_pca, choice = "var", axes = 2, top = 10)
+# Control variable colors using their contributions to the principle axis
+fviz_pca_var(subset_pca, col.var="contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE # Avoid text overlapping
+             ) + theme_minimal() + ggtitle("Variables - PCA")
+```
+
+```{r}
+fviz_nbclust(subset_self_wide_dt, kmeans, method = "wss", k.max = 24) + 
+  theme_minimal() + 
+  ggtitle("the Elbow Method")
+```
+
+```{r}
+fviz_nbclust(subset_self_wide_dt, kmeans, method = "silhouette", k.max = 24) + 
+  theme_minimal() + 
+  ggtitle("The Silhouette Plot")
+```
+
+
+
+
+
+

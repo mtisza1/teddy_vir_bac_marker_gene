@@ -1,0 +1,271 @@
+---
+title: "compare aligning reads to whole genome, samtools coverage"
+output: html_notebook
+---
+
+load packages
+
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(vegan)
+library(ggpubr)
+library(rstatix)
+library(cowplot)
+library(forcats)
+
+```
+
+
+set paths and filenames
+
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
+
+samcov_table=sprintf("%s/data/all_shuf_samples_samcov.tsv", 
+                        find_rstudio_root_file())
+
+marker_magu_features=sprintf("%s/data/Marker-MAGu_virus_DB_v1.1_metadata.tsv",
+                             find_rstudio_root_file())
+
+```
+
+load tables
+```{r}
+samcov_dt <- fread(samcov_table, header = F, 
+                  col.names = c("sampleID", "contig_id", "contig_start", 
+                                "contig_end", "reads_aligned", "covered_bases", 
+                                "aligned_proportion", "mean_depth", 
+                                "mean_baseq", "mean_mapq")) %>%
+  filter(aligned_proportion >= 10)
+```
+
+```{r}
+long_dt <- fread(long_table, sep = "\t", header = T) %>%
+  select(sampleID, rel_abundance, lineage) %>%
+  mutate(sampleID = as.character(sampleID),
+         kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
+                             grepl("k__Vir", lineage) ~ "Virus",
+                             grepl("k__Ar", lineage) ~ "Archea",
+                             grepl("k__Euk", lineage) ~ "Eukaryota",
+                             TRUE ~ "other"),
+         species = gsub(".*s__","s__", lineage))
+
+mm_features_dt <- fread(marker_magu_features, header = T, sep = "\t")
+```
+
+```{r}
+subsample_dt <- long_dt %>%
+  filter(sampleID %in% unique(samcov_dt$sampleID)) 
+```
+
+```{r}
+samcov_meta_dt <- merge(samcov_dt, mm_features_dt %>% select(-contig_length),
+                      by = "contig_id") %>%
+  mutate(sampleID = as.character(sampleID),
+         lineage = gsub("s__vSGB", "s__vOTU", lineage),
+         species = gsub(".*s__","s__", lineage))
+```
+
+
+```{r}
+sam_match_dt <- merge(subsample_dt%>% select(-c(lineage, kingdom)), 
+                  samcov_meta_dt,
+      by = c("sampleID", "species"),
+      all.y = T) %>%
+  filter(`marker-magu_genes` >= 4) %>%
+  mutate(detected = case_when(is.na(rel_abundance) ~ "Not-detected",
+                              TRUE ~ "Detected")) %>%
+  group_by(contig_id, sampleID) %>%
+  mutate(any_detect = case_when(any(detected %in% "Detected") ~ "Detected",
+                              TRUE ~ "not-detected")) %>%
+  mutate(rel_abundance = case_when(is.na(rel_abundance) ~ 0,
+                                   TRUE ~ rel_abundance)) %>%
+  ungroup() %>%
+  mutate(cov_bins = cut(aligned_proportion, 
+                    breaks = c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100)))
+```
+
+```{r}
+detect_propp <- sam_match_dt %>%
+  filter(!is.na(cov_bins)) %>%
+  group_by(cov_bins, detected) %>%
+  summarize(n = n()) %>%
+  mutate(prop = prop.table(n)) %>%
+  ggplot(aes(x = cov_bins, y = prop, fill = fct_reorder(detected, n))) +
+  geom_col() +
+  scale_fill_brewer(palette = 7,
+                    name = "Status") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "% Genome Covered by 1 or More Reads",
+       y = "Detection") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(detect_propp,
+       file = sprintf("%s/charts/breadth_detect_cols.pdf",
+                      find_rstudio_root_file()),
+       height = 5, width = 6)
+```
+
+
+```{r}
+sam_match_dt %>%
+  filter(!is.na(cov_bins)) %>%
+  ggplot(aes(x = cov_bins, y = log10(mean_depth), fill = detected)) +
+  #geom_jitter(height = 0, position = "dodge") +
+  geom_boxplot(outlier.shape = NA) +
+  geom_point(pch = 21, position = position_jitterdodge(jitter.width = 0.1),
+             alpha = 0.5) +
+  #geom_violin() +
+  labs(x = "Bins: Percent genomes covered by reads") +
+  theme_minimal() +
+  stat_compare_means(label = "p.signif")
+```
+
+
+
+```{r}
+sam_match_dt %>%
+  filter(!is.na(cov_bins),
+         aligned_proportion <= 90) %>%
+  ggplot(aes(x = aligned_proportion, y = mean_depth)) +
+  #geom_point(aes(fill = detected), alpha = 0.2, pch = 21) +
+  geom_smooth(aes(color = detected)) +
+  scale_fill_manual(values = c("orangered", "forestgreen")) +
+  scale_color_manual(values = c("red", "darkgreen")) +
+  #facet_wrap(~detected) +
+  xlim(0, NA) +
+  theme_minimal()
+```
+
+
+```{r}
+sam_match_dt %>%
+  filter(!is.na(cov_bins),
+         aligned_proportion <= 90) %>%
+  ggplot(aes(x = aligned_proportion, y = log10(mean_depth))) +
+  geom_point(aes(fill = detected), alpha = 0.2, pch = 21, color = "white") +
+  geom_smooth(aes(color = detected)) +
+  scale_fill_manual(values = c("orangered", "cadetblue")) +
+  scale_color_manual(values = c("red", "blue")) +
+  geom_hline(yintercept = 1) +
+  #facet_wrap(~detected) +
+  xlim(0, NA) +
+  theme_minimal()
+```
+
+```{r}
+sam_match_dt %>%
+  filter(!is.na(cov_bins)) %>%
+  ggplot(aes(x = log10(mean_depth/aligned_proportion), fill = detected)) +
+  geom_density(alpha = 0.8) +
+  #geom_smooth() +
+  scale_fill_manual(values = c("orangered", "forestgreen")) +
+  facet_wrap(~cov_bins) +
+  theme_minimal()
+```
+
+```{r}
+depth_prop_binp <- sam_match_dt %>%
+  filter(!is.na(cov_bins)) %>%
+  ggplot(aes(x = cov_bins, y = log10(mean_depth/aligned_proportion), 
+             fill = detected)) +
+  #geom_jitter(height = 0, position = "dodge") +
+  geom_boxplot(outlier.shape = NA) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.1),
+             alpha = 0.1, color = "grey30") +
+  #geom_violin() +
+  labs(x = "Bins: Percent genomes covered by reads") +
+  theme_minimal() +
+  stat_compare_means(label = "p.signif") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(depth_prop_binp,
+       file = sprintf("%s/charts/depth_over_breadth_detect_cols.pdf",
+                      find_rstudio_root_file()),
+       height = 5, width = 6)
+```
+
+```{r}
+depth_prop_allp <- sam_match_dt %>%
+  filter(!is.na(cov_bins)) %>%
+  ggplot(aes(x = aligned_proportion, y = log10(mean_depth/aligned_proportion))) +
+  geom_point(aes(fill = detected), alpha = 0.2, pch = 21, color = "white") +
+  geom_smooth(aes(color = detected)) +
+  scale_fill_manual(values = c("orangered", "cadetblue")) +
+  scale_color_manual(values = c("red", "blue")) +
+  #facet_wrap(~detected) +
+  xlim(0, NA) +
+  theme_minimal()
+
+ggsave(depth_prop_allp,
+       file = sprintf("%s/charts/depth_over_breadth_detect_scat.pdf",
+                      find_rstudio_root_file()),
+       height = 5, width = 6)
+```
+
+
+```{r}
+samcov_all_dt <- fread(samcov_table, header = F, 
+                  col.names = c("sampleID", "contig_id", "contig_start", 
+                                "contig_end", "reads_aligned", "covered_bases", 
+                                "aligned_proportion", "mean_depth", 
+                                "mean_baseq", "mean_mapq"))
+
+cover_all_meta_dt <- merge(samcov_all_dt, mm_features_dt %>% select(-contig_length),
+                      by = "contig_id") %>%
+  mutate(sampleID = as.character(sampleID),
+         lineage = gsub("s__vSGB", "s__vOTU", lineage),
+         species = gsub(".*s__","s__", lineage))
+```
+
+
+```{r}
+detect_match <- merge(subsample_dt, 
+                  cover_all_meta_dt %>% select(-c(lineage, iphop_host_genus,
+                                                  iphop_confidence, Virulence_score,
+                                                  checkv_completeness)),
+      by = c("sampleID", "species"),
+      all.x = T) %>%
+  filter(kingdom == "Virus") %>%
+  mutate(#aligned_status = case_when(is.na(reads_aligned) ~ "Not-aligned",
+        #                      TRUE ~ "Aligned"),
+         aligned_proportion = case_when(is.na(reads_aligned) ~ 0,
+                                   TRUE ~ aligned_proportion))
+```
+
+```{r}
+detect_covp <- detect_match %>%
+  ggplot(aes(x = (aligned_proportion/100))) +
+  geom_histogram(bins = 50, fill = "grey25") +
+  theme_bw() +
+  geom_vline(xintercept = median(detect_match$aligned_proportion)/100) +
+  geom_text(aes(x = median(detect_match$aligned_proportion)/100, 
+                y = 50), label = "Median", color = "white", 
+            angle=90, vjust = -0.8) +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1)) +
+  labs(x = "% Genome Covered by 1 or More Reads",
+       y = "count")
+  
+ggsave(detect_covp,
+       file = sprintf("%s/charts/cov_for_detected.pdf",
+                      find_rstudio_root_file()),
+       height = 4, width = 6)
+```
+
+
+
+
+
+
+
+
