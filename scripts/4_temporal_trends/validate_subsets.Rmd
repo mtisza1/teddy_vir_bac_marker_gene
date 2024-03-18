@@ -15,7 +15,10 @@ library(wesanderson)
 library(factoextra)
 library(FactoMineR)
 library(nationalparkcolors)
-
+library(cluster)
+library(magrittr)
+library(NbClust)
+library(clustree)
 ```
 
 set paths and filenames
@@ -146,7 +149,134 @@ fviz_nbclust(subset_self_wide_dt, kmeans, method = "silhouette", k.max = 24) +
   ggtitle("The Silhouette Plot")
 ```
 
+```{r}
+gap_stat <- clusGap(subset_self_wide_dt, 
+                    FUN = kmeans, 
+                    nstart = 30, 
+                    K.max = 24, 
+                    B = 50)
 
+fviz_gap_stat(gap_stat) + 
+  theme_minimal() + 
+  ggtitle("fviz_gap_stat: Gap Statistic")
+```
+
+```{r}
+kmean_calc <- function(df, ...){
+  kmeans(df, scaled = ..., nstart = 30)
+}
+km2 <- kmean_calc(subset_self_wide_dt, 2)
+km3 <- kmean_calc(subset_self_wide_dt, 3)
+km4 <- kmeans(subset_self_wide_dt, 4)
+km5 <- kmeans(subset_self_wide_dt, 5)
+km6 <- kmeans(subset_self_wide_dt, 6)
+km7 <- kmeans(subset_self_wide_dt, 7)
+km8 <- kmeans(subset_self_wide_dt, 8)
+km9 <- kmeans(subset_self_wide_dt, 9)
+km10 <- kmeans(subset_self_wide_dt, 10)
+km11 <- kmeans(subset_self_wide_dt, 11)
+p1 <- fviz_cluster(km2, data = subset_self_wide_dt, 
+                   frame.type = "convex",
+                   labelsize = 0) + theme_minimal() + 
+  ggtitle("k = 2") 
+p2 <- fviz_cluster(km3, data = subset_self_wide_dt, 
+                   frame.type = "convex",
+                   labelsize = 0) + theme_minimal() + 
+  ggtitle("k = 3")
+p3 <- fviz_cluster(km4, data = subset_self_wide_dt, 
+                   frame.type = "convex",
+                   labelsize = 0) + theme_minimal() + 
+  ggtitle("k = 4")
+p4 <- fviz_cluster(km5, data = subset_self_wide_dt, 
+                   frame.type = "convex",
+                   labelsize = 0) + theme_minimal() + 
+  ggtitle("k = 5")
+p5 <- fviz_cluster(km6, data = subset_self_wide_dt, 
+                   frame.type = "convex",
+                   labelsize = 0) + theme_minimal() +
+  ggtitle("k = 6")
+p6 <- fviz_cluster(km7, data = subset_self_wide_dt, 
+                   frame.type = "convex",
+                   labelsize = 0) + theme_minimal() + 
+  ggtitle("k = 7")
+p7 <- fviz_cluster(km8, data = subset_self_wide_dt, 
+                   frame.type = "convex",
+                   labelsize = 0) + theme_minimal() + 
+  ggtitle("k = 8")
+p8 <- fviz_cluster(km9, data = subset_self_wide_dt, 
+                   frame.type = "convex",
+                   labelsize = 0) + theme_minimal() + 
+  ggtitle("k = 9")
+p9 <- fviz_cluster(km10, data = subset_self_wide_dt, 
+                   frame.type = "convex",
+                   labelsize = 0) + theme_minimal() + 
+  ggtitle("k = 10")
+p10 <- fviz_cluster(km11, data = subset_self_wide_dt, 
+                   frame.type = "convex",
+                   labelsize = 0) + theme_minimal() + 
+  ggtitle("k = 11")
+
+cowplot::plot_grid(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10,
+                   labels = c("k2", "k3", "k4", "k5", "k6", "k7"))
+```
+
+```{r}
+ssc <- data.frame(
+  kmeans = c(2,3,4,5,6,7,8,9,10,11),
+  within_ss = c(mean(km2$withinss), mean(km3$withinss), 
+                mean(km4$withinss), mean(km5$withinss), 
+                mean(km6$withinss), mean(km7$withinss), 
+                mean(km8$withinss), mean(km9$withinss),
+                mean(km10$withinss),mean(km11$withinss)),
+  between_ss = c(km2$betweenss, km3$betweenss, km4$betweenss, 
+                 km5$betweenss, km6$betweenss, km7$betweenss,
+                 km8$betweenss, km9$betweenss, km10$betweenss,
+                 km11$betweenss)
+)
+ssc %<>% gather(., key = "measurement", value = value, -kmeans)
+
+#ssc$value <- log10(ssc$value)
+
+ssc %>% ggplot(., aes(x=kmeans, y=log10(value), fill = measurement)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  ggtitle("Cluster Model Comparison") + 
+  xlab("Number of Clusters") + 
+  ylab("Log10 Total Sum of Squares") + 
+  scale_x_discrete(name = "Number of Clusters", 
+                   limits = c("0", "2", "3", "4", "5", "6", 
+                              "7", "8", "9", "10", "11"))
+```
+
+
+```{r}
+res.nbclust <- NbClust(subset_self_wide_dt, distance = "euclidean",
+                  min.nc = 2, max.nc = 14, 
+                  method = "complete", index ="all")
+
+```
+
+```{r}
+tmp <- NULL
+
+for (k in 1:11){
+  tmp[k] <- kmeans(subset_self_wide_dt, k, nstart = 30)
+}
+df <- data.frame(tmp)# add a prefix to the column names
+
+colnames(df) <- seq(1:11)
+
+colnames(df) <- paste0("k",colnames(df))# get individual PCA
+
+df.pca <- prcomp(df, center = TRUE, scale. = FALSE)
+
+ind.coord <- df.pca$x
+
+ind.coord <- ind.coord[,1:2]
+
+df <- bind_cols(as.data.frame(df), as.data.frame(ind.coord))
+
+clustree(df, prefix = "k")
+```
 
 
 
