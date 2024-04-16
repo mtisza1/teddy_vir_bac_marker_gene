@@ -1,0 +1,154 @@
+---
+title: "compare marker-magu and metaphlan 4 on mock community ATCC MSA-1003"
+output: html_notebook
+---
+
+
+load packages
+```{r}
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(ggplot2)
+library(forcats)
+```
+
+```{r}
+### files
+markermagu_table=sprintf("%s/data/Mock_MSA1003_marker_magu_abundance_table1.tsv",
+                     find_rstudio_root_file())
+metaphlan_table=sprintf("%s/data/Mock_MSA1003_mpa4_abundance_table.txt",
+                       find_rstudio_root_file())
+read_table=sprintf("%s/data/Mock_MSA1003_read_stats.tsv",
+                       find_rstudio_root_file())
+```
+
+
+load longform marker-magu table with all the abundance data, parse and filter
+```{r}
+
+magu_dt <- fread(markermagu_table, sep = "\t", header = T)
+
+## make columns for species and genus
+magu_dt <- magu_dt %>%
+  mutate(species = gsub(".*s__","", lineage ), 
+         genus = gsub(".*g__","g__", lineage ), 
+         kingdom = gsub("\\|.*", "", lineage)) %>%
+  mutate(genus = gsub("\\|s__.*", "", genus),
+         species = gsub("\\|t__.*","", species ),
+         sampleID = as.character(sampleID)) %>%
+  filter(kingdom == "k__Bacteria") %>%
+  select(c("sampleID", "species", "rel_abundance")) %>%
+  complete(sampleID, species, fill = list (rel_abundance = 0)) %>%
+  group_by(sampleID) %>%
+  mutate(rel_abundance = rel_abundance / sum(rel_abundance)) %>%
+  ungroup()
+  
+magu_dt %>% distinct(species)
+```
+
+load metaphlan4 table and make longform
+```{r}
+mpa4_dt <- fread(metaphlan_table, header = T,
+                 sep = "\t") %>%
+  filter(grepl("t__", clade_name)) %>%
+  pivot_longer(!clade_name) %>%
+  mutate(species = gsub(".*s__","", clade_name ), 
+         genus = gsub(".*g__","g__", clade_name ), 
+         kingdom = gsub("\\|.*", "", clade_name)) %>%
+  mutate(genus = gsub("\\|s__.*", "", genus),
+         species = gsub("\\|t__.*","", species ))
+
+colnames(mpa4_dt) <- c("lineage", "sampleID", "mpa4_abundance", "species", "genus", "kingdom")
+
+mpa4_dt <- mpa4_dt %>%
+  mutate(sampleID = gsub(".mpa4_vJan21", "", sampleID),
+         mpa4_abundance = mpa4_abundance/ 100,
+         species = gsub("Cereibacter_sphaeroides", "Rhodobacter_sphaeroides", species)) %>%
+  select(c("sampleID", "species", "mpa4_abundance"))
+
+mpa4_dt %>% distinct(species)
+```
+
+quick plot mpa4
+```{r}
+mpa4_dt %>%
+  ggplot(aes(x=species, y = sampleID, 
+             fill = mpa4_abundance, label = round(mpa4_abundance, digits = 3) )) +
+  geom_tile() +
+  geom_text(size = 3) +
+  theme_light() +
+  scale_fill_viridis_c(option="D", name="relative\nabundance", 
+                       na.value = "black") +
+  theme(axis.text.x = element_text(angle = 90, hjust=0.8))
+```
+
+merge tables and add read counts
+```{r}
+merge_dt <- merge(mpa4_dt, magu_dt, by = c("sampleID", "species"), all = T) %>%
+  replace(is.na(.), 0) %>%
+  mutate(magu_abundance = rel_abundance)
+
+read_dt <- fread(read_table, sep = "\t", header = F, 
+                 col.names = c("sampleID", "fmt", "type", "reads",
+                               "total_length", "shortest", "avg", "longest")) %>%
+  mutate(sampleID = as.character(sampleID),
+         readsl = reads,
+         across(readsl, scales::label_comma()),
+         reads2 = paste(readsl, "reads"))
+
+merge_dt <- merge(merge_dt, read_dt, by = "sampleID")
+```
+
+
+combine tables and plot scatter
+```{r}
+comp_p <- merge_dt %>%
+  ggplot(aes(x = mpa4_abundance, y = magu_abundance, color = species)) +
+  geom_point(alpha = 0.5, size = 3) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dotted") +
+  facet_wrap(vars(reads2)) +
+  labs(x = "Metaphlan4 abundance", y = "Marker-MAGu abundance") +
+  theme_bw()
+
+comp_p
+
+ggsave(comp_p, 
+       file = sprintf("%s/charts/compare_bacteria_mpa4_and_marker-magu1.pdf",
+                       find_rstudio_root_file()), 
+       width = 8, height= 5)
+
+```
+
+
+```{r}
+direct_p <- merge_dt %>%
+  select(c(sampleID, mpa4_abundance, magu_abundance, reads, reads2, species)) %>%
+  pivot_longer(!c(sampleID, reads, reads2, species)) %>%
+  mutate(species = gsub("_", "\n", species)) %>%
+  ggplot(aes(x = fct_reorder(reads2, reads), y = value, fill = name)) +
+  geom_col(position = "dodge") +
+  scale_fill_manual(values = c("#D95B42", "#150718")) +
+  facet_wrap(~species, scales = "free_y") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Quality-filtered reads in MSA-1003 library",
+       y = "relative abundance") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, hjust=0.8))
+
+direct_p
+
+ggsave(direct_p, 
+       file = sprintf("%s/charts/direct_species_mpa4_and_marker-magu1.pdf",
+                       find_rstudio_root_file()), 
+       width = 10, height= 6)
+
+```
+
+
+
+
+
+
