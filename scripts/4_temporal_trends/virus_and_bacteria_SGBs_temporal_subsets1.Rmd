@@ -15,7 +15,7 @@ library(rprojroot)
 library(cowplot)
 library(latrend)
 library(nationalparkcolors)
-
+library(kml)
 ```
 
 set paths and filenames
@@ -96,17 +96,39 @@ run latrend on prevalent SGBs
 options(latrend.id = "species", latrend.time = "rounded_DOL")
 plotTrajectories(prev_ab_meta_dt, response = "self_rel_abund")
 
-kmlMethod <- lcMethodKML(response = "self_rel_abund", nClusters = 8, nbRedrawing = 1)
+kmlMethod <- lcMethodKML(response = "self_rel_abund", 
+                         nClusters = 12, 
+                         nbRedrawing = 1)
 
 kmlModel <- latrend(kmlMethod, data = prev_ab_meta_dt)
-kmlMethods <- lcMethods(kmlMethod, nClusters = 1:8)
+
+kmlMethods <- lcMethods(kmlMethod, nClusters = 1:12)
 
 as.data.frame(kmlMethods)
 kmlMethods
 
-kmlModels <- latrendBatch(kmlMethods, data = prev_ab_meta_dt, verbose = FALSE)
+kmlModels <- latrendBatch(kmlMethods, 
+                          data = prev_ab_meta_dt, 
+                          verbose = FALSE)
 kmlModels
-plotMetric(kmlModels, c("logLik", "BIC", "WMAE"))
+met_plot <- plotMetric(kmlModels, c("Dunn", "ASW", "WMAE", "WRSS", 
+                        "BIC", "estimationTime", "Dunn")) +
+  geom_vline(xintercept = 8,
+             color = "grey20",
+             alpha = 0.6)
+
+met_plot
+
+ggsave(
+  met_plot,
+  file = sprintf("%s/charts/temporal_subsets_latrend_metrics1.pdf",
+                find_rstudio_root_file()), 
+  width = 7, height = 5 
+)
+```
+
+
+```{r}
 kmlModelp <- subset(kmlModels, nClusters == 8, drop = TRUE)
 
 

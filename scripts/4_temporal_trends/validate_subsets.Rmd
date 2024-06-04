@@ -92,7 +92,7 @@ subset_assign_PCA_dt %>%
 
 calc tSNE
 ```{r}
-emb_bac <- Rtsne::Rtsne(subset_prcomp1$x[,1:10], perplexity = 20)
+emb_bac <- Rtsne::Rtsne(subset_prcomp1$x[,1:10], perplexity = 30)
 
 embb_bac <- as.data.frame(emb_bac$Y)
 
@@ -110,11 +110,25 @@ subset_assign_tSNE_dt <- merge(embb_bac, species_sub_dt,
 pal <- park_palette("Arches")
 coul <- colorRampPalette(pal)(8)
 
-subset_assign_tSNE_dt %>%
-  ggplot(aes(x = V1, y = V2, color = assignment)) +
-  geom_point(alpha = 0.95) +
+subset_tsne_p <- subset_assign_tSNE_dt %>%
+  ggplot(aes(x = V1, y = V2, fill = assignment)) +
+  geom_point(alpha = 0.85, 
+             shape = 21,
+             color = "black",
+             size = 3) +
+  labs(x = "t-SNE 1",
+       y = "t-SNE 2") +
   theme_bw() +
-  scale_color_manual(values = coul)
+  scale_fill_manual(values = coul)
+
+subset_tsne_p
+
+ggsave(
+  subset_tsne_p,
+  file = sprintf("%s/charts/temporal_subset_tsne1.pdf",
+                       find_rstudio_root_file()), 
+  width = 8, height= 5
+)
 ```
 check stats on PCA
 ```{r}
