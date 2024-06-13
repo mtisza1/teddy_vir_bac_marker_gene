@@ -1,0 +1,206 @@
+---
+title: "correlation between virus SGBs and bacteria SGBs in putative host genus, converting taxonomy between ncbi and GTDB"
+output: html_notebook
+---
+
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(rprojroot)
+library(cowplot)
+library(nationalparkcolors)
+library(ggpubr)
+library(rstatix)
+
+```
+
+set paths and filenames
+```{r}
+### files
+temporal_table=sprintf("%s/intermediate_files/prev_SGBs_cluster_assignments_long_abundance.tsv", 
+                       find_rstudio_root_file())
+iphop_table=sprintf("%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv",
+                    find_rstudio_root_file())
+
+virclust_table=sprintf("%s/data/TGVG_database_v1.1.VC_taxonomy_table.csv",
+                       find_rstudio_root_file())
+
+tax_conversion_table=sprintf("%s/data/gtdb_ncbi_taxonomy_map_summary.tsv",
+                             find_rstudio_root_file())
+```
+
+
+load tables and get host prediction for each virus SGB
+```{r}
+temporal_dt <- fread(temporal_table, header = T, sep = "\t")
+
+virc_dt <- fread(virclust_table, sep = ",", header = T) %>%
+  select(c(name, Species))
+
+iphop_dt <- fread(iphop_table, sep = ",", header = T, 
+                  col.names = c("name", "AAI", "host_lineage", 
+                                "confidence", "methods")) %>%
+  mutate(host_genus = gsub(".*g__","g__", host_lineage),
+         host_family = gsub(";g__.*","", host_lineage))
+
+
+tax_con_dt <- fread(tax_conversion_table,
+                    sep = "\t", header = T, 
+                  col.names = c("gtdb_taxonomy", "ncbi_taxonomy", "lca_frac", 
+                                "target_tax_level", "ncbi_lineage"))
+
+host_tax_fix <- merge(iphop_dt, tax_con_dt,
+                      by.x = "host_genus", by.y = "gtdb_taxonomy",
+                      all.x = T)
+
+
+```
+
+```{r}
+host_tax_fix %>%
+  filter(ncbi_taxonomy == "o__Clostridiales",
+         target_tax_level == "genus")
+```
+
+
+```{r}
+
+
+
+merge_dt <- merge(temporal_dt, virc_dt, by.x = "species", by.y = "Species", all.x = T)
+
+merge_dt <- merge(merge_dt, host_tax_fix, by = "name", all.x = T)
+
+merge_dt <- merge_dt %>%
+  mutate(x_genus = case_when(
+    target_tax_level == "genus" ~ as.character(ncbi_taxonomy),
+    target_tax_level != "genus" ~ as.character(host_genus),
+    TRUE ~ "Not Found"
+  ),
+  comp_genus = case_when(
+    kingdom == "Bacteria" ~ as.character(genus),
+    kingdom == "Virus" ~ as.character(x_genus),
+    TRUE ~ "Not Found"
+  )
+  )
+#  mutate(comp_genus = case_when(
+#    kingdom == "Bacteria" ~ as.character(genus),
+#    kingdom == "Virus" & target_tax_level == "genus" ~ as.character(ncbi_taxonomy),
+#    kingdom == "Virus" & target_tax_level != "genus" ~ as.character(host_genus),
+#    TRUE ~ "Not Found"
+#  ))
+```
+
+```{r}
+merge_dt %>% 
+  group_by(comp_genus, kingdom) %>% 
+  summarize(n = n()) %>% 
+  arrange(comp_genus)
+```
+
+correlations for bacteria virus pairs
+```{r}
+merge_dt$king_host_species <- str_c(merge_dt$kingdom, "@", 
+                                    merge_dt$comp_genus, "@",
+                                    merge_dt$species)
+wide_host_dt <- merge_dt %>%
+  filter(comp_genus != "NA") %>%
+  subset( select = c("king_host_species", "rounded_DOL", "self_rel_abund")) %>%
+  distinct() %>%
+  pivot_wider(names_from = king_host_species, 
+              values_from = self_rel_abund, 
+              values_fill = 0) %>%
+  select(-rounded_DOL)
+
+#colnames(wide_host_dt)
+data_cor <- cor(wide_host_dt[ , !grepl("Virus", colnames(wide_host_dt))],  # Calculate correlations
+                wide_host_dt[ , grepl("Virus", colnames(wide_host_dt))])
+data_cor <- as.data.frame(data_cor)
+
+data_cor <- setDT(data_cor, keep.rownames = "Bacteria")
+
+cor_long <- data_cor %>%
+  pivot_longer(!Bacteria, names_to = "Virus", values_to = "correlation")
+
+cor_long <- setDT(cor_long)
+
+cor_long <- cor_long[, 
+                     c("Bacteria_kingdom", "Bacteria_genus", "Bacteria_species") 
+                     := tstrsplit(Bacteria, "@", fixed=TRUE)
+                     ]
+
+cor_long <- cor_long[, 
+                     c("Virus_kingdom", "Virus_host_genus", "Virus_species") 
+                     := tstrsplit(Virus, "@", fixed=TRUE)
+                     ] %>%
+  select(c(correlation, Virus_species, Virus_host_genus, Bacteria_species, Bacteria_genus))
+
+host_match_corr_dt <- cor_long %>%
+  filter(Virus_host_genus == Bacteria_genus)
+
+dim(
+  host_match_corr_dt %>% distinct(Virus_host_genus)
+)
+```
+
+plot distribution of best correlations by genus
+```{r}
+pal <- park_palette("Everglades")
+coul <- colorRampPalette(pal)(60)
+
+host_match_corr_dt %>%
+  group_by(Virus_species) %>%
+  filter(correlation == max(correlation)) %>%
+  ungroup() %>%
+  ggplot(aes(x = Virus_host_genus, y = correlation, color = Virus_host_genus)) +
+  geom_boxplot(fill = "white", color = "grey50", outlier.shape = NA) +
+  geom_hline(yintercept =0) +
+  geom_jitter(width = 0.4, alpha = 0.7, stroke = 0) +
+  scale_color_manual(values = coul) +
+  theme_bw() + 
+  labs(x = "Putative Host Genus", y = "Virus SGB to Host, Best Correlation") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "Off") +
+  scale_x_discrete(labels = function(x) sub('g__', '', x))
+
+
+#ggsave(file = 
+#         sprintf("%s/charts/correlation_virus_SGB_best_bacteria2.pdf",
+#                 find_rstudio_root_file()), 
+#       width = 8, height = 4)
+
+```
+
+```{r}
+cor_long %>%
+  filter(Virus_host_genus != "Not Found") %>%
+  mutate(predicted = case_when(
+    Virus_host_genus == Bacteria_genus ~ "predicted_genus",
+    TRUE ~ "not predicted"
+  )) %>%
+  group_by(Virus_species) %>%
+  filter(any(predicted == "predicted_genus")) %>%
+  ungroup() %>%
+  group_by(Virus_species, Virus_host_genus, predicted) %>%
+  summarize(avg_cor = mean(correlation)) %>%
+  ggplot(
+    aes(x = Virus_host_genus, y = avg_cor, fill = predicted)
+  ) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_hline(yintercept =0) +
+#  geom_jitter(width = 0.4, alpha = 0.7, stroke = 0) +
+  stat_compare_means(label = "p.signif") +
+#  facet_wrap(~predicted, nrow = 1) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+
+
+
+

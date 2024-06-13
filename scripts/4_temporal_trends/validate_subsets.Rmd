@@ -32,8 +32,8 @@ metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery
 #iphop_table=sprintf("%s/data/TGVG_database_v1.1.exemplars.iphop_genus_outputs1.filt.csv",
 #                    find_rstudio_root_file())
 
-#long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
-#                   find_rstudio_root_file())
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
 
 ```
 
@@ -130,6 +130,8 @@ ggsave(
   width = 8, height= 5
 )
 ```
+
+
 check stats on PCA
 ```{r}
 subset_pca <- PCA(subset_self_wide_dt,  graph = FALSE)
