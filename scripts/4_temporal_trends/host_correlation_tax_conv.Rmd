@@ -170,34 +170,48 @@ host_match_corr_dt %>%
   scale_x_discrete(labels = function(x) sub('g__', '', x))
 
 
-#ggsave(file = 
-#         sprintf("%s/charts/correlation_virus_SGB_best_bacteria2.pdf",
-#                 find_rstudio_root_file()), 
-#       width = 8, height = 4)
+ggsave(file = 
+         sprintf("%s/charts/correlation_virus_SGB_best_bacteria2.pdf",
+                 find_rstudio_root_file()), 
+       width = 8, height = 4)
 
 ```
 
 ```{r}
-cor_long %>%
+big_corp <- cor_long %>%
   filter(Virus_host_genus != "Not Found") %>%
   mutate(predicted = case_when(
     Virus_host_genus == Bacteria_genus ~ "predicted_genus",
     TRUE ~ "not predicted"
-  )) %>%
+  ),
+  Virus_host_genus = gsub("g__", "", Virus_host_genus)
+  ) %>%
   group_by(Virus_species) %>%
   filter(any(predicted == "predicted_genus")) %>%
   ungroup() %>%
   group_by(Virus_species, Virus_host_genus, predicted) %>%
   summarize(avg_cor = mean(correlation)) %>%
   ggplot(
-    aes(x = Virus_host_genus, y = avg_cor, fill = predicted)
+    aes(x = 1, y = avg_cor, fill = predicted)
   ) +
   geom_boxplot(outlier.shape = NA) +
-  geom_hline(yintercept =0) +
-#  geom_jitter(width = 0.4, alpha = 0.7, stroke = 0) +
   stat_compare_means(label = "p.signif") +
-#  facet_wrap(~predicted, nrow = 1) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15))) +
+  scale_fill_manual(values = c("#E54E21", "#6C8645")) +
+  facet_wrap(~Virus_host_genus) +
+  theme_bw() +
+  labs(x = "",
+       y = "Average correlation between\nvirus SGB and bacterial genera") +
+  theme(axis.text.x = element_blank())
+
+big_corp
+
+ggsave(big_corp,
+       file = 
+         sprintf("%s/charts/correlation_all_virus_bacteria2.pdf",
+                 find_rstudio_root_file()), 
+       width = 9, height = 11)
+
 ```
 
 
