@@ -1,0 +1,128 @@
+---
+title: "Crassphage abundance/prevalence over time (s__vOTU_32927)"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(ggpubr)
+library(rstatix)
+library(cowplot)
+
+```
+
+set paths and filenames
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
+
+```
+
+
+
+load long table and metadata, merge 
+```{r}
+long_dt <- fread(long_table, sep = "\t", header = T) %>%
+  select(sampleID, rel_abundance, lineage) %>%
+  mutate(sampleID = as.character(sampleID),
+         kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
+                             grepl("k__Vir", lineage) ~ "Virus",
+                             grepl("k__Ar", lineage) ~ "Archea",
+                             grepl("k__Euk", lineage) ~ "Eukaryota",
+                             TRUE ~ "other"),
+         species = gsub(".*s__", "s__", lineage))
+
+meta_dt <- fread(sprintf("%s", metadata_table), sep = ",", header = T) %>%
+  select(-V1) %>%
+  mutate(sample = as.character(sample))
+
+
+```
+
+```{r}
+round_any = function(x, accuracy, f=ceiling){f(x/ accuracy) * accuracy}
+
+```
+
+
+```{r}
+crass_dt <- long_dt %>%
+  filter(species %in% c("s__vOTU_32927") ) %>%
+  select(sampleID, rel_abundance)
+
+merge_dt <- merge(crass_dt, meta_dt, by.x = "sampleID", by.y ="sample",
+                  all.y = T) %>%
+  mutate(rel_abundance = replace_na(rel_abundance, 0),
+         rounded_DOL =  round_any(age_days, 100))
+
+```
+
+```{r}
+merge_dt %>%
+  filter(rounded_DOL <= 1400) %>%
+  mutate(Country = case_when(
+           country == 1 ~ "USA",
+           country == 2 ~ "FIN",
+           country == 3 ~ "GER",
+           country == 4 ~ "SWE",
+           TRUE ~ "other"
+         )
+  ) %>%
+  group_by(rounded_DOL, Country) %>%
+  summarize(detect = sum(rel_abundance != 0),
+            nd = sum(rel_abundance == 0),
+            all = n(),
+            prop = detect/all) %>%
+  ggplot(aes(x = rounded_DOL, y = prop, color = Country)) +
+  geom_line() +
+  geom_point() +
+  scale_y_continuous(labels = scales::percent) +
+  scale_color_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3")) +
+  theme_bw()
+  #facet_wrap(~country)
+```
+
+```{r}
+merge_dt %>%
+  group_by(mask_id, country) %>%
+  summarize(detect = sum(rel_abundance != 0),
+            nd = sum(rel_abundance == 0),
+            all = n(),
+            prop = detect/all) %>%
+#  filter(detect > 1) %>%
+  ggplot(aes(x = prop, y = detect, color = factor(country))) +
+  geom_point() +
+  scale_color_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3")) +
+  theme_bw()
+  
+```
+
+
+
+```{r}
+meta_dt %>%
+  mutate(rounded_DOL =  round_any(age_days, 100)) %>%
+  group_by(country, rounded_DOL) %>%
+  summarize(n = n()) %>%
+  ggplot(aes(x = rounded_DOL, y = n)) +
+  geom_col() +
+  facet_wrap(~country)
+```
+
+
+
+
+
+
+
+
+
