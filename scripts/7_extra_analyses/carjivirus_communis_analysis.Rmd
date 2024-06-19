@@ -91,6 +91,32 @@ merge_dt %>%
   #facet_wrap(~country)
 ```
 
+
+```{r}
+comm_p <- merge_dt %>%
+  filter(rounded_DOL <= 1400) %>%
+  group_by(rounded_DOL) %>%
+  summarize(detect = sum(rel_abundance != 0),
+            nd = sum(rel_abundance == 0),
+            all = n(),
+            prop = detect/all) %>%
+  ggplot(aes(x = rounded_DOL, y = prop)) +
+  geom_col() +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw() +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  labs(x = "day of life (rounded)",
+       y = "proportion of samples\npositive for C. communis")
+
+ggsave(comm_p,
+       file = 
+         sprintf("%s/charts/c_communis_all_samples1.pdf",
+                 find_rstudio_root_file()), 
+       width = 5, height = 3.5)
+
+```
+
+
 ```{r}
 merge_dt %>%
   group_by(mask_id, country) %>%
@@ -104,6 +130,29 @@ merge_dt %>%
   scale_color_manual(values=c("#eddccb", "#8D7F99", "#163343", "#EC8FA3")) +
   theme_bw()
   
+```
+
+
+```{r}
+lotsof_com_p <- merge_dt %>%
+  group_by(mask_id, country) %>%
+  mutate(detect = sum(rel_abundance != 0),
+         c_communis = case_when(rel_abundance != 0 ~ "detected",
+                           TRUE ~ "not detected")) %>%
+  filter(detect >= 20) %>%
+  ggplot(aes(x = age_days, size = rel_abundance, y = factor(mask_id),
+             color = c_communis)) +
+  geom_point(alpha = 0.75) +
+  scale_color_manual(values = c("purple", "black")) +
+  theme_bw() +
+  labs(x = "day of life",
+       y = "participant ID")
+
+ggsave(lotsof_com_p,
+       file = 
+         sprintf("%s/charts/c_communis_high_participants1.pdf",
+                 find_rstudio_root_file()), 
+       width = 5, height = 3.5)
 ```
 
 

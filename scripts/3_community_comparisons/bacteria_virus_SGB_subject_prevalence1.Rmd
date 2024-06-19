@@ -10,7 +10,10 @@ library(data.table)
 library(stringr)
 library(dplyr)
 library(rprojroot)
-
+library(tidyr)
+library(broom)
+library(purrr)
+library(emmeans)
 ```
 
 set paths and filenames
@@ -76,6 +79,88 @@ ggsave(sprintf("%s/charts/bacteria_vs_virus_SGB_patient_prevalence1.pdf", find_r
 ```
 
 
+```{r}
+bins_dt <- group_dt %>%
+  filter(kingdom == "Virus" | kingdom == "Bacteria") %>%
+  group_by(kingdom) %>%
+  mutate(n_species = n()) %>%
+  ungroup() %>%
+  mutate(n_bins = cut(n_subjects, 
+#                    breaks = c(0, 44, 88, 132, 176, 220,
+#                               264, 308, 352, 396, 440,
+#                               484, 528, 572, 612, 656,
+#                               704, 748, 792, 836, 888),
+#                    labels = c(44, 88, 132, 176, 220,
+#                               264, 308, 352, 396, 440,
+#                               484, 528, 572, 612, 656,
+#                               704, 748, 792, 836, 888))) %>%
+                    breaks = c(0, 50, 100, 150, 200, 250,
+                               300, 350, 400, 450, 500,
+                               550, 600, 650, 700, 750,
+                               800, 850, 900),
+                    labels = c(50, 100, 150, 200, 250,
+                               300, 350, 400, 450, 500,
+                               550, 600, 650, 700, 750,
+                               800, 850, 900))) %>%
+  group_by(n_bins, kingdom, n_species) %>%
+  summarize(n = n()) %>%
+  mutate(king_prop = n/n_species) %>%
+  ungroup() %>%
+  complete(n_bins, kingdom, fill = list(king_prop = 0,
+                                        n = 0)) %>%
+  mutate(n_bins = as.character(n_bins),
+         n_bins = as.numeric(n_bins))
 
+
+```
+
+```{r}
+king_lm <- lm(n_bins ~ log10(king_prop + 1e-5)*kingdom, data=bins_dt)
+
+( fitted.emt <- emtrends(king_lm, "kingdom", var = "king_prop") )
+
+pw_king <- pairs(fitted.emt)
+
+pw_king
+```
+
+```{r}
+rarep <- bins_dt %>%
+  ggplot(aes(x = n_bins, 
+             y = log10(king_prop + 1e-5), 
+             color = kingdom)) +
+  geom_point(aes(size = log10(n+1)), alpha=0.75) +
+  geom_smooth(alpha=0.4, se = F, method = "lm") +
+#  geom_line() +
+  scale_colour_manual(name = '', 
+                      values =c('Bacteria'='#F2AD00','Virus'='#5BBCD6'), 
+                      labels = c('Bacteria','Viruses')) +
+  scale_y_continuous(breaks = c(-5, -4, -2, 0), 
+                     labels = c(0, "0.01%", "1%", "100%")) +
+  scale_x_continuous(n.breaks = 20) +
+  theme_bw() +
+  geom_text(x = 500, y = -0.1, label = "p-value = 0.0002", color = "black") +
+  scale_size(name = "log10(# SGBs)") +
+  ylab("Percentage of Species Genome Bins") +
+  xlab("number of subjects with SGB detected") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+ggsave(rarep,
+       file = sprintf("%s/charts/bacteria_vs_virus_SGB_rare2.pdf", 
+                      find_rstudio_root_file()), 
+       width = 4, height = 3)
+
+```
+
+
+```{r}
+king_lm <- lm(n_bins ~ log10(king_prop + 1e-5)*kingdom, data=bins_dt)
+# Obtain slopes for each machine ...
+( fitted.emt <- emtrends(king_lm, "kingdom", var = "king_prop") )
+# ... and pairwise comparisons thereof
+pw_king <- pairs(fitted.emt)
+
+pw_king
+```
 
 

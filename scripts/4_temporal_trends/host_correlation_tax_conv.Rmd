@@ -17,7 +17,7 @@ library(cowplot)
 library(nationalparkcolors)
 library(ggpubr)
 library(rstatix)
-
+library(forcats)
 ```
 
 set paths and filenames
@@ -89,12 +89,8 @@ merge_dt <- merge_dt %>%
     TRUE ~ "Not Found"
   )
   )
-#  mutate(comp_genus = case_when(
-#    kingdom == "Bacteria" ~ as.character(genus),
-#    kingdom == "Virus" & target_tax_level == "genus" ~ as.character(ncbi_taxonomy),
-#    kingdom == "Virus" & target_tax_level != "genus" ~ as.character(host_genus),
-#    TRUE ~ "Not Found"
-#  ))
+
+
 ```
 
 ```{r}
@@ -192,16 +188,17 @@ big_corp <- cor_long %>%
   group_by(Virus_species, Virus_host_genus, predicted) %>%
   summarize(avg_cor = mean(correlation)) %>%
   ggplot(
-    aes(x = 1, y = avg_cor, fill = predicted)
+    aes(x = predicted, y = avg_cor, fill = predicted)
   ) +
   geom_boxplot(outlier.shape = NA) +
+  geom_jitter(shape = 21, height = 0, width = 0) +
   stat_compare_means(label = "p.signif") +
   scale_y_continuous(expand = expansion(mult = c(0.05, 0.15))) +
   scale_fill_manual(values = c("#E54E21", "#6C8645")) +
   facet_wrap(~Virus_host_genus) +
   theme_bw() +
   labs(x = "",
-       y = "Average correlation between\nvirus SGB and bacterial genera") +
+       y = "Average correlation between virus SGB and bacterial genera") +
   theme(axis.text.x = element_blank())
 
 big_corp
@@ -214,8 +211,9 @@ ggsave(big_corp,
 
 ```
 
+
 ```{r}
-rank_dt <- cor_long %>%
+rank_sp_dt <- cor_long %>%
   filter(Virus_host_genus != "Not Found") %>%
   mutate(predicted = case_when(
     Virus_host_genus == Bacteria_genus ~ "predicted_genus",
@@ -226,27 +224,79 @@ rank_dt <- cor_long %>%
   group_by(Virus_species) %>%
   filter(any(predicted == "predicted_genus")) %>%
   ungroup() %>%
-  group_by(Virus_species, predicted, Bacteria_genus, Virus_host_genus) %>%
-  summarize(avg_cor = mean(correlation)) %>%
-  ungroup() %>%
-  arrange(desc(avg_cor)) %>%
+  arrange(desc(correlation)) %>%
   group_by(Virus_species) %>%
   mutate(rank = row_number())
+```
 
+```{r}
+rank_sp_dt %>%
+  filter(rank == 1) %>%
+  ungroup() %>%
+  group_by(predicted) %>%
+  summarize(n = n())
+```
 
-rank_dt %>%
-  ggplot(aes(x = predicted, y = rank)) +
-  geom_violin() + 
-  geom_jitter(height = 0, alpha = 0.2, width = 0.1) +
-  facet_wrap(~Virus_host_genus) +
-  stat_compare_means(label = "p.signif") +
-  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15))) +
-  scale_fill_manual(values = c("#E54E21", "#6C8645")) +
-  theme_bw()
-
-
+```{r}
+rank_sp_dt %>%
+  summarize(n = n())
 ```
 
 
 
+
+```{r}
+best_corr_rankp <- rank_sp_dt %>%
+  filter(predicted == "predicted_genus") %>%
+  slice_min(rank) %>%
+  ungroup() %>%
+  group_by(Virus_host_genus) %>%
+  arrange(rank) %>%
+  mutate(orderr = row_number(),
+         `best rank` = case_when(rank == 1 ~ "best",
+                         rank <= 45 ~ "top 10%",
+                         TRUE ~ "other")) %>%
+  arrange(desc(orderr)) %>%
+  ungroup() %>%
+  ggplot(aes(x = orderr, y = rank, color = fct_reorder(`best rank`, rank))) +
+  geom_point() +
+  scale_color_brewer(palette = "Dark2", 
+                     name = "highest ranking\ncorrelation\nwithin predicted\nhost genus") +
+  facet_wrap(~Virus_host_genus) +
+  theme_bw() +
+  labs(x = "vSGBs",
+       y = "rank (out of 446)") 
+
+best_corr_rankp
+
+ggsave(best_corr_rankp,
+       file = 
+         sprintf("%s/charts/rank_host_correlation1.pdf",
+                 find_rstudio_root_file()), 
+       width = 9, height = 11)
+```
+
+```{r}
+rank_sp_dt %>%
+  filter(predicted == "predicted_genus") %>%
+  slice_min(rank) %>%
+  ungroup() %>%
+  group_by(Virus_host_genus) %>%
+  arrange(rank) %>%
+  mutate(orderr = row_number(),
+         `best rank` = case_when(rank == 1 ~ "best",
+                         rank <= 45 ~ "top 10%",
+                         TRUE ~ "other")) %>%
+  arrange(desc(orderr)) %>%
+  ungroup() %>%
+  group_by(`best rank`) %>%
+  summarize(n = n())
+```
+
+
+```{r}
+temporal_dt %>%
+  filter(kingdom == "Bacteria") %>%
+  distinct(species)
+```
 

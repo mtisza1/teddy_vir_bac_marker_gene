@@ -12,7 +12,6 @@ library(stringr)
 library(dplyr)
 library(tidyr)
 library(rprojroot)
-library(vegan)
 library(ggpubr)
 library(rstatix)
 library(cowplot)
@@ -47,6 +46,18 @@ samcov_dt <- fread(samcov_table, header = F,
                                 "mean_baseq", "mean_mapq")) %>%
   filter(aligned_proportion >= 10)
 ```
+
+```{r}
+comp_dt <- samcov_dt %>%
+  mutate(depth_breadth_ratio = reads_aligned / covered_bases) %>%
+  arrange(contig_id, desc(depth_breadth_ratio)) %>%
+  group_by(contig_id) %>%
+  filter(any(aligned_proportion >= 90),
+         n() >= 3,
+         contig_end >= 20000)
+```
+
+
 
 ```{r}
 long_dt <- fread(long_table, sep = "\t", header = T) %>%
@@ -110,6 +121,8 @@ detect_propp <- sam_match_dt %>%
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+detect_propp
+
 ggsave(detect_propp,
        file = sprintf("%s/charts/breadth_detect_cols.pdf",
                       find_rstudio_root_file()),
@@ -149,19 +162,52 @@ sam_match_dt %>%
 
 
 ```{r}
+depth_prop_allp <- sam_match_dt %>%
+  filter(!is.na(cov_bins),
+         aligned_proportion <= 75) %>%
+  ggplot(aes(x = aligned_proportion, 
+             y = log10(mean_depth/aligned_proportion))) +
+  geom_point(aes(color = detected), 
+             alpha = 0.2) +
+  geom_smooth(aes(color = detected),
+              method = "lm") +
+  scale_fill_manual(values = c("cadetblue", "orangered")) +
+  scale_color_manual(values = c("cadetblue", "orangered")) +
+  xlim(9, NA) +
+  theme_minimal()
+
+ggsave(depth_prop_allp,
+       file = sprintf("%s/charts/depth_over_breadth_detect_scat2.pdf",
+                      find_rstudio_root_file()),
+       height = 5, width = 6)
+```
+
+```{r}
 sam_match_dt %>%
   filter(!is.na(cov_bins),
-         aligned_proportion <= 90) %>%
-  ggplot(aes(x = aligned_proportion, y = log10(mean_depth))) +
-  geom_point(aes(fill = detected), alpha = 0.2, pch = 21, color = "white") +
-  geom_smooth(aes(color = detected)) +
-  scale_fill_manual(values = c("orangered", "cadetblue")) +
-  scale_color_manual(values = c("red", "blue")) +
-  geom_hline(yintercept = 1) +
-  #facet_wrap(~detected) +
-  xlim(0, NA) +
+         aligned_proportion <=100) %>%
+  ggplot(aes(x = aligned_proportion,
+             y = log10(mean_depth/aligned_proportion), 
+             group = detected)) +
+  stat_density_2d(aes(fill = detected),
+                  alpha = 0.6, geom = "polygon") +
+  scale_fill_manual(values = c("cadetblue", "orangered")) +
+  scale_color_manual(values = c("cadetblue", "orangered")) +
+  geom_smooth(aes(color = detected),
+              method = "lm") +
   theme_minimal()
 ```
+
+```{r}
+sam_match_dt %>%
+  filter(!is.na(cov_bins),
+         aligned_proportion <=100) %>%
+  ggplot(aes(y = log10(mean_depth/aligned_proportion), fill = detected)) +
+  geom_density(alpha = 0.6) +
+  scale_fill_manual(values = c("cadetblue", "orangered")) +
+  theme_minimal()
+```
+
 
 ```{r}
 sam_match_dt %>%
@@ -206,6 +252,8 @@ depth_prop_allp <- sam_match_dt %>%
   #facet_wrap(~detected) +
   xlim(0, NA) +
   theme_minimal()
+
+depth_prop_allp
 
 ggsave(depth_prop_allp,
        file = sprintf("%s/charts/depth_over_breadth_detect_scat.pdf",
@@ -255,6 +303,8 @@ detect_covp <- detect_match %>%
   scale_x_continuous(labels = scales::percent_format(accuracy = 1)) +
   labs(x = "% Genome Covered by 1 or More Reads",
        y = "count")
+
+detect_covp
   
 ggsave(detect_covp,
        file = sprintf("%s/charts/cov_for_detected.pdf",
