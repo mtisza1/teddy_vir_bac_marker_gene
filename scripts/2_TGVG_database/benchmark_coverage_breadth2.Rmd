@@ -183,19 +183,35 @@ ggsave(depth_prop_allp,
 ```
 
 ```{r}
-sam_match_dt %>%
+al_cov_p <- sam_match_dt %>%
   filter(!is.na(cov_bins),
          aligned_proportion <=100) %>%
   ggplot(aes(x = aligned_proportion,
              y = log10(mean_depth/aligned_proportion), 
              group = detected)) +
   stat_density_2d(aes(fill = detected),
-                  alpha = 0.6, geom = "polygon") +
-  scale_fill_manual(values = c("cadetblue", "orangered")) +
-  scale_color_manual(values = c("cadetblue", "orangered")) +
-  geom_smooth(aes(color = detected),
-              method = "lm") +
+                  alpha = 0.6, geom = "polygon",
+                  bins = 30) +
+  geom_point(aes(color = detected), 
+             alpha = 0.05) +
+  scale_fill_manual(values = c("#A8CDEC", "#9B6981"),
+                    name = "Marker-MAGu\nDetection") +
+  scale_color_manual(values = c("#A8CDEC", "#9B6981"),
+                    name = "Marker-MAGu\nDetection") +
+  labs(x = "% Genome Coverage",
+       y = "log10(Mean Depth / % Genome Coverage)") +
   theme_minimal()
+
+al_cov_p
+
+ggsave(
+  al_cov_p,
+  file = sprintf(
+    "%s/charts/depth_genome_cov_mm_density1.pdf",
+    find_rstudio_root_file()
+  )
+)
+
 ```
 
 ```{r}

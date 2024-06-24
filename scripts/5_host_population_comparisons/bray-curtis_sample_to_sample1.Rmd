@@ -16,7 +16,7 @@ library(vegan)
 library(ggpubr)
 library(rstatix)
 library(cowplot)
-
+library(emmeans)
 ```
 
 set paths and filenames
@@ -139,6 +139,19 @@ big_bray_long %>%
   theme_bw()
 ```
 
+
+```{r}
+merge(big_bray_long, meta_dt, 
+      by.x = "sampleID1", by.y = "sample") %>%
+  ggplot(aes(x= days_apart, y = bray_curtis, color = T1D)) +
+  geom_point(alpha = 0.005) +
+  geom_smooth() +
+  theme_bw()
+  
+  
+```
+
+
 get bray-curtis distance to next sample VIROME
 
 ```{r}
@@ -156,6 +169,53 @@ vir_next_bray_dt <- merge(vir_next_bray_dt, meta_dt,
 vir_next_bray_dt <- merge(vir_next_bray_dt, groups_dt, by = "mask_id")
 
 ```
+
+```{r}
+
+t1d_lm <- lm(days_apart ~ bray_curtis*T1D, 
+             data= vir_next_bray_dt %>%
+               filter(days_apart <= 100,
+                      days_apart >= 10))
+
+( fitted.emt <- emtrends(t1d_lm, "T1D", var = "bray_curtis") )
+
+pw_t1d <- pairs(fitted.emt)
+
+pw_t1d
+```
+
+
+```{r}
+vir_days_p <- vir_next_bray_dt %>%
+  filter(days_apart <= 100,
+         days_apart >=10) %>%
+  ggplot(aes(x= days_apart, y = bray_curtis, color = T1D)) +
+  geom_point(alpha = 0.1) +
+  geom_smooth(
+    method = "lm"
+    ) +
+  geom_text(y = 0.9,
+            x = 50,
+            label = "p-value = 0.0234",
+            color = "black") +
+  scale_color_manual(values = c("#8CBEB1", "orangered")) +
+  theme_bw()  +
+  labs(x = "Days to Next Sample",
+       y = "Bray-Curtis Dissimilarity")
+
+vir_days_p
+
+ggsave(
+  vir_days_p,
+  file = sprintf(
+    "%s/charts/bray_curtis_next_vir_days1.pdf",
+    find_rstudio_root_file()
+  ),
+  height = 5, width = 3.5
+)
+```
+
+
 
 average bray distance by subject/pair VIROME
 ```{r}
@@ -408,6 +468,51 @@ bac_next_bray_dt <- merge(bac_next_bray_dt, meta_dt, by.x = "sampleID1", by.y = 
 ## add groups
 bac_next_bray_dt <- merge(bac_next_bray_dt, groups_dt, by = "mask_id")
 
+```
+
+
+```{r}
+
+bac_t1d_lm <- lm(days_apart ~ bray_curtis*T1D, 
+             data= bac_next_bray_dt %>%
+               filter(days_apart <= 100,
+                      days_apart >= 10))
+
+( bac_fitted.emt <- emtrends(bac_t1d_lm, "T1D", var = "bray_curtis") )
+
+pw_bac_t1d <- pairs(bac_fitted.emt)
+
+pw_bac_t1d
+```
+
+
+```{r}
+bac_days_p <- bac_next_bray_dt %>%
+  filter(days_apart <= 100,
+         days_apart >=10) %>%
+  ggplot(aes(x= days_apart, y = bray_curtis, color = T1D)) +
+  geom_point(alpha = 0.1) +
+  geom_smooth(
+    method = "lm"
+    ) +
+  geom_text(y = 0.9, x = 50,
+            label = "p-value = 0.0133",
+            color = "black") +
+  scale_color_manual(values = c("#8CBEB1", "orangered")) +
+  theme_bw() +
+  labs(x = "Days to Next Sample",
+       y = "Bray-Curtis Dissimilarity")
+
+bac_days_p
+
+ggsave(
+  bac_days_p,
+  file = sprintf(
+    "%s/charts/bray_curtis_next_bac_days1.pdf",
+    find_rstudio_root_file()
+  ),
+  height = 5, width = 3.5
+)
 ```
 
 average bray distance by subject/pair BACTERIOME
