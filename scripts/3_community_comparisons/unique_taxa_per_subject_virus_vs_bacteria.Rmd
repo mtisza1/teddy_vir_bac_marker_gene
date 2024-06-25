@@ -12,7 +12,8 @@ library(dplyr)
 library(tibble)
 library(tidyr)
 library(rprojroot)
-
+library(ggpubr)
+library(rstatix)
 ```
 
 set paths and filenames
@@ -81,6 +82,16 @@ wide_unique_dt %>% ggplot() +
   scale_colour_manual(name = 'SGB type', 
                       values =c('#5BBCD6'='#5BBCD6', '#F2AD00'='#F2AD00'), 
                       labels = c('Virus','Bacteria')) +
+#  stat_cor(aes(x = total_samples_Virus, y = distinct_taxa_Virus),
+#           label.y = 700, method = "spearman", color = "#5BBCD6") +
+#  stat_regline_equation(aes(x = total_samples_Virus, y = distinct_taxa_Virus)) +
+#  stat_cor(aes(x = total_samples_Virus, y = distinct_taxa_Bacteria), 
+#           color = "#F2AD00",
+#           method = "spearman") +
+  geom_smooth(aes(x = total_samples_Virus, y = distinct_taxa_Virus), 
+              color = "#5BBCD6") +
+  geom_smooth(aes(x = total_samples_Virus, y = distinct_taxa_Bacteria), 
+              color = "#F2AD00") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
 
 ggsave(file = sprintf("%s/charts/unique_observed_bacteria_vs_virus_by_subject.pdf",

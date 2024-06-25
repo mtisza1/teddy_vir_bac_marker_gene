@@ -106,7 +106,7 @@ SWE_ab_meta_dt %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
         strip.text.x = element_text(size=6))
 
-ggsave(file = sprintf("%s/charts/all_SGBs_SWE_rf_top12_features.pdf", find_rstudio_root_file()), 
+ggsave(file = sprintf("%s/charts/all_SGBs_SWE_rf_top12_features2.pdf", find_rstudio_root_file()), 
                  width = 8, height = 4)
 ```
 
@@ -148,7 +148,7 @@ FIN_ab_meta_dt %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
         strip.text.x = element_text(size=6))
 
-ggsave(file = sprintf("%s/charts/all_SGBs_FIN_rf_top12_features.pdf",
+ggsave(file = sprintf("%s/charts/all_SGBs_FIN_rf_top12_features2.pdf",
                       find_rstudio_root_file()), 
                  width = 8, height = 4)
 ```
@@ -191,7 +191,7 @@ GER_ab_meta_dt %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
         strip.text.x = element_text(size=6))
 
-ggsave(file = sprintf("%s/charts/all_SGBs_GER_rf_top12_features.pdf",
+ggsave(file = sprintf("%s/charts/all_SGBs_GER_rf_top12_features2.pdf",
                       find_rstudio_root_file()), 
                  width = 8, height = 4)
 ```
@@ -234,7 +234,7 @@ USA_ab_meta_dt %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1), 
         strip.text.x = element_text(size=6))
 
-ggsave(file = sprintf("%s/charts/all_SGBs_USA_rf_top12_features.pdf",
+ggsave(file = sprintf("%s/charts/all_SGBs_USA_rf_top12_features2.pdf",
                       find_rstudio_root_file()), 
                  width = 8, height = 4)
 ```
