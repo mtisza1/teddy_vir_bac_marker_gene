@@ -1,0 +1,124 @@
+---
+title: "Rarefaction participants, virus vs bacteria SGBs"
+output: html_notebook
+---
+
+load packages
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+library(micropan)
+
+```
+
+set paths and filenames
+```{r}
+### files
+long_table=sprintf("%s/data/mp142_TGVG1.1_MPA4_combined_abundance_table_longform1.tsv",
+                   find_rstudio_root_file())
+metadata_table=sprintf("%s/data/some_teddy_MP142_metadata2.all_samples1.delivery.csv",
+                       find_rstudio_root_file())
+
+```
+
+load long table and metadata
+```{r}
+long_dt <- fread(long_table, sep = "\t", header = T) %>%
+  select(sampleID, rel_abundance, lineage) %>%
+  mutate(kingdom = case_when(grepl("k__Bac", lineage) ~ "Bacteria", 
+                             grepl("k__Vir", lineage) ~ "Virus",
+                             grepl("k__Ar", lineage) ~ "Archea",
+                             grepl("k__Euk", lineage) ~ "Eukaryota",
+                             TRUE ~ "other"),
+         sampleID = as.character(sampleID),
+         species = gsub(".*s__","s__", lineage )) %>%
+  filter(kingdom == "Virus" | kingdom == "Bacteria")
+
+meta_dt <- fread(metadata_table, sep = ",", header = T) %>%
+  select(-V1) %>%
+  mutate(sample = as.character(sample))
+
+merge_dt <- merge(long_dt, meta_dt, by.x = "sampleID", by.y = "sample")
+```
+
+function to get heaps
+```{r}
+heaps_summary = function(p_group){
+  temp_dt <- p_group %>% select(c(sampleID, rel_abundance, species)) %>%
+  pivot_wider(names_from = sampleID, values_from = rel_abundance, 
+              values_fill = 0)
+  
+  #return(typeof(temp_dt))
+  #typeof()
+  
+  temp_df <- as.data.frame(temp_dt)
+  rownames(temp_df) <- temp_dt$species
+
+  temp_df <- subset(temp_dt, select = -species) %>% t()
+#  return(temp_df)
+ 
+  heapsg <- heaps(temp_df, n.perm = 100)
+  
+  return(as.data.frame(t(heapsg)))
+#  return(heapsg$alpha)
+  }
+```
+
+
+get heaps for all participants with >= 3 samples
+```{r}
+heaps_mask_dt <- merge_dt %>%
+  group_by(mask_id) %>%
+  filter(n_distinct(sampleID) >= 3) %>%
+  ungroup() %>%
+  filter(kingdom %in% c("Virus", "Bacteria")) %>%
+  group_by(mask_id, kingdom) %>%
+  select(c(sampleID, rel_abundance, species)) %>%
+  group_modify(
+    ~ heaps_summary(.x)
+  ) 
+
+```
+
+```{r}
+mask_size_dt <- merge_dt %>%
+  group_by(mask_id) %>%
+  summarize(n_samples = n_distinct(sampleID))
+```
+
+
+```{r}
+heaps_merge_dt <- merge(heaps_mask_dt, mask_size_dt,
+                        by = "mask_id")
+```
+
+```{r}
+heaps_p <- heaps_merge_dt %>%
+  ggplot(aes(x = n_samples, y = alpha, color = kingdom)) +
+  geom_point(alpha=0.6, stroke=0, size=1.5) +
+  geom_hline(yintercept = 1) +
+  geom_smooth() +
+  theme_bw() +
+  labs(x = "Number of Longitudinal Samples",
+       y = "Heaps Law alpha\n<- OPEN | CLOSED ->") +
+  scale_colour_manual(name = 'SGB type', 
+                      values =c('#F2AD00', '#5BBCD6')) 
+
+heaps_p
+
+ggsave(
+  heaps_p,
+  file = sprintf(
+    "%s/charts/heaps_alpha_virbac1.pdf",
+    find_rstudio_root_file()
+  ),
+  width = 4,
+  height = 4
+)
+```
+
+
