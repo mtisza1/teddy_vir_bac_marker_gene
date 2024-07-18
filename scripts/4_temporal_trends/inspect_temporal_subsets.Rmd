@@ -68,7 +68,8 @@ sup_tab_dt <- bac_sub_sum_dt %>%
   arrange(assignment) %>%
   mutate(species = gsub("s__", "", species),
          species = gsub("\\|t__", ", ", species),
-         species = gsub("_", " ", species))
+         species = gsub("_", " ", species),
+         avg_rel_abundance = scales::label_percent() (avg_rel_abundance) )
 ```
 
 
