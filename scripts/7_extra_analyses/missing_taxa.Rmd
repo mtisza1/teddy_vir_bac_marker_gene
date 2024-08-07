@@ -1,0 +1,63 @@
+---
+title: "taxa lost from Marker-MAGu threshold"
+output: html_notebook
+---
+
+load packages
+
+```{r}
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(dplyr)
+library(tidyr)
+library(rprojroot)
+
+```
+
+
+```{r}
+marker_magu_meta <- fread(
+  sprintf("%s/data/Marker-MAGu_virus_DB_v1.1_metadata.tsv",
+          find_rstudio_root_file())
+)
+```
+
+3 or fewer marker genes
+```{r}
+missing_dt <- marker_magu_meta %>%
+  mutate(taxclass = gsub("\\|o__.*", "", lineage)) %>%
+  filter(`marker-magu_genes` <= 3) %>%
+  group_by(taxclass) %>%
+  summarize(n = n())
+```
+
+```{r}
+included_dt <- marker_magu_meta %>%
+  mutate(taxclass = gsub("\\|o__.*", "", lineage)) %>%
+  filter(`marker-magu_genes` >=4 ) %>%
+  group_by(taxclass) %>%
+  summarize(n = n())
+```
+
+```{r}
+ marker_magu_meta %>%
+  filter(grepl("c__Malgrandaviricetes", lineage)) %>%
+  filter(`marker-magu_genes` >=4 )
+```
+
+```{r}
+all_tax_dt <- marker_magu_meta %>%
+  mutate(taxclass = gsub("\\|o__.*", "", lineage)) %>%
+  group_by(taxclass) %>%
+  summarize(n = n())
+```
+
+
+
+
+
+
+
+
+
