@@ -1,5 +1,6 @@
 data/
 intermediate_files/
+sandbox/
 .DS_Store
 **/.DS_Store
 .Rdata
