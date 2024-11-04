@@ -12,6 +12,9 @@ Scripts for reproducing TEDDY virome/bacteriome analyses and figures
 
 `renv::restore()`
 
+## Required data
+
+Download the data (https://zenodo.org/records/13357316) into this repository's main directory, then unpack.
 
 ## Python package versions used in these analyses
 
